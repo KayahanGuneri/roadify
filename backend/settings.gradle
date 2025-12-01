@@ -1,0 +1,12 @@
+rootProject.name = 'roadify-backend'
+
+include(
+        'config-server',
+        'eureka-server',
+        'gateway-bff-service',
+        'route-service',
+        'places-service',
+        'trip-planner-service',
+        'ai-assistant-service',
+        'analytics-service'
+)

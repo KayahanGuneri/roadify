@@ -1,0 +1,10 @@
+// Root Gradle build file for Roadify backend.
+// Later we will configure:
+// - Java 21 toolchain
+// - Spring Boot 3 dependency management
+// - Shared dependencies for all services.
+
+allprojects {
+    group = 'com.roadify'
+    version = '0.0.1-SNAPSHOT'
+}
