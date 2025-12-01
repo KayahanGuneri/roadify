@@ -1,10 +1,55 @@
-// Root Gradle build file for Roadify backend.
-// Later we will configure:
-// - Java 21 toolchain
-// - Spring Boot 3 dependency management
-// - Shared dependencies for all services.
+// Root Gradle build file for Roadify backend monorepo
+
+buildscript {
+    ext {
+        springBootVersion = '3.3.4'
+        springCloudVersion = '2023.0.3'
+        javaVersion = JavaVersion.VERSION_21
+    }
+}
+
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.3.4' apply false
+    id 'io.spring.dependency-management' version '1.1.6' apply false
+}
 
 allprojects {
     group = 'com.roadify'
     version = '0.0.1-SNAPSHOT'
+
+    repositories {
+        mavenCentral()
+    }
+}
+
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'io.spring.dependency-management'
+
+    // Gradle 9+ style Java configuration
+    java {
+        sourceCompatibility = javaVersion
+        targetCompatibility = javaVersion
+    }
+
+    dependencies {
+        testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    }
+
+    test {
+        useJUnitPlatform()
+    }
+
+    // Spring Cloud BOM is applied for every subproject (because the plugin is applied here)
+    dependencyManagement {
+        imports {
+            mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+        }
+    }
+}
+
+// Keep the version in ext for potential future use
+ext {
+    set('springCloudVersion', springCloudVersion)
 }
