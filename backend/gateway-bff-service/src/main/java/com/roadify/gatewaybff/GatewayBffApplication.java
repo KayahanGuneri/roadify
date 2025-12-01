@@ -1,12 +1,22 @@
 package com.roadify.gatewaybff;
 
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
 /**
- * Entry point for the API Gateway / BFF.
- * Later we will add Spring Cloud Gateway configuration here.
+ * GatewayBffApplication
+ *
+ * English:
+ * API gateway / BFF for the Roadify mobile app.
+ *
+ * Türkçe Özet:
+ * Roadify mobil uygulaması için istekleri mikroservislere yönlendiren
+ * API gateway / BFF servisinin giriş noktası.
  */
+@SpringBootApplication
 public class GatewayBffApplication {
 
     public static void main(String[] args) {
-        // TODO: Turn this into a Spring Boot Spring Cloud Gateway application.
+        SpringApplication.run(GatewayBffApplication.class, args);
     }
 }

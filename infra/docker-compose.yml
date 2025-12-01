@@ -1,0 +1,71 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: roadify-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: roadify
+      POSTGRES_PASSWORD: roadify
+      POSTGRES_DB: roadify
+    ports:
+      - "5432:5432"
+    networks:
+      - roadify-net
+
+  redis:
+    image: redis:7
+    container_name: roadify-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - roadify-net
+
+  zookeeper:
+    image: bitnami/zookeeper:3.9
+    container_name: roadify-zookeeper
+    restart: unless-stopped
+    environment:
+      ALLOW_ANONYMOUS_LOGIN: "yes"
+    ports:
+      - "2181:2181"
+    networks:
+      - roadify-net
+
+  kafka:
+    image: bitnami/kafka:3.7
+    container_name: roadify-kafka
+    restart: unless-stopped
+    environment:
+      KAFKA_CFG_ZOOKEEPER_CONNECT: zookeeper:2181
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+    ports:
+      - "9092:9092"
+    depends_on:
+      - zookeeper
+    networks:
+      - roadify-net
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0
+    container_name: roadify-keycloak
+    command: start-dev
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8081:8080"
+    networks:
+      - roadify-net
+
+  # backend service images will be added later (with Dockerfiles)
+  # config-server:
+  #   ...
+  # eureka-server:
+  #   ...
+  # gateway-bff-service:
+  #   ...
+
+networks:
+  roadify-net:
+    driver: bridge

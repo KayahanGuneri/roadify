@@ -1,12 +1,23 @@
 package com.roadify.eurekaserver;
 
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.netflix.eureka.server.EnableEurekaServer;
+
 /**
- * Entry point for the Eureka Server.
- * In Phase 1 we will add @SpringBootApplication and @EnableEurekaServer.
+ * EurekaServerApplication
+ *
+ * English:
+ * Discovery server where all backend services will register.
+ *
+ * Türkçe Özet:
+ * Tüm backend servislerinin register olduğu discovery (Eureka) sunucusu.
  */
+@SpringBootApplication
+@EnableEurekaServer
 public class EurekaServerApplication {
 
     public static void main(String[] args) {
-        // TODO: Turn this into a Spring Boot Eureka Server.
+        SpringApplication.run(EurekaServerApplication.class, args);
     }
 }

@@ -1,13 +1,23 @@
 package com.roadify.configserver;
 
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.config.server.EnableConfigServer;
+
 /**
- * Entry point for the Config Server.
- * For now this is only a plain Java class.
- * In Phase 1 we will add @SpringBootApplication and SpringApplication.run(...) here.
+ * ConfigServerApplication
+ *
+ * English:
+ * Centralized configuration server for all Roadify microservices.
+ *
+ * Türkçe Özet:
+ * Tüm Roadify mikroservisleri için merkezi konfigürasyon sunan service.
  */
+@SpringBootApplication
+@EnableConfigServer
 public class ConfigServerApplication {
 
     public static void main(String[] args) {
-        // TODO: Turn this into a Spring Boot application in Phase 1.
+        SpringApplication.run(ConfigServerApplication.class, args);
     }
 }
