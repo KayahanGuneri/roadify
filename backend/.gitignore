@@ -1,5 +1,16 @@
+# Backend build output'ları
 /build/
-/out/
-.gradle/
+config-server/build/
+route-service/build/
+
+# Root seviyesindeki out ve .idea
+../out/
+../.idea/
+
+# IntelliJ ve Gradle
+.idea/
 *.iml
-*.log
+.gradle/
+
+# Local config (API key vs için)
+route-service/src/main/resources/application-local.yml
