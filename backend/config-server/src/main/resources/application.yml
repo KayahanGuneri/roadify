@@ -4,18 +4,12 @@ server:
 spring:
   application:
     name: config-server
+
   profiles:
     active: native
+
   cloud:
     config:
       server:
         native:
-          # In the beginning, we read configs from classpath.
-          # Later you can switch to a Git repo.
           search-locations: classpath:/config
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info

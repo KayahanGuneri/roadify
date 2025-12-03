@@ -1,0 +1,46 @@
+spring:
+  application:
+    name: route-service
+
+  datasource:
+    url: jdbc:postgresql://roadify-postgres:5432/roadify
+    username: roadify
+    password: roadify
+  sql:
+    init:
+      mode: never
+
+  redis:
+    host: roadify-redis
+    port: 6379
+
+  kafka:
+    bootstrap-servers: roadify-kafka:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    properties:
+      spring.json.add.type.headers: false
+
+  jackson:
+    serialization:
+      WRITE_DATES_AS_TIMESTAMPS: false
+
+server:
+  port: 0 # random port, Eureka üzerinden bulunacak
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka-server:8761/eureka/
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+# ORS client config (dummy – gerçek key'i config-server'dan da alabiliriz)
+ors:
+  base-url: https://api.openrouteservice.org
+  api-key: ${ORS_API_KEY}

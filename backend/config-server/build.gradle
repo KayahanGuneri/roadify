@@ -1,12 +1,24 @@
 plugins {
+    id 'java'
     id 'org.springframework.boot'
     id 'io.spring.dependency-management'
-    id 'java'
+}
+
+group = 'com.roadify'
+version = '0.0.1-SNAPSHOT'
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+}
+
+repositories {
+    mavenCentral()
 }
 
 dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.cloud:spring-cloud-config-server'
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 
 tasks.named('test') {
