@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * JDBC-based implementation of RouteRepository using Spring's JdbcTemplate.
@@ -78,7 +79,7 @@ public class RouteJdbcRepositoryImpl implements RouteRepository {
             @Override
             public Route mapRow(ResultSet rs, int rowNum) throws SQLException {
                 return Route.builder()
-                        .id(rs.getString("id"))
+                        .id(UUID.fromString(rs.getString("id")))
                         .fromLat(rs.getDouble("from_lat"))
                         .fromLng(rs.getDouble("from_lng"))
                         .toLat(rs.getDouble("to_lat"))

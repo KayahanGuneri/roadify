@@ -1,107 +1,109 @@
 // src/screens/HomeScreen.tsx
-
-/**
- * HomeScreen.tsx
- *
- * English:
- * Landing screen for Roadify. Shows the main tagline and entry points
- * to plan trips, see existing trips, open the AI assistant and view analytics.
- *
- * Türkçe Özet:
- * Roadify uygulamasının açılış ekranı. Ana sloganı ve
- * rota planlama, kayıtlı seyahatler, yapay zeka asistanı ve
- * analiz ekranlarına giriş butonlarını içerir.
- */
-
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { View, Text, StyleSheet, Image } from 'react-native';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { Screen } from '../components/Screen';
+import { PrimaryButton } from '../components/PrimaryButton';
 import { RootStackParamList } from '../navigation/RootStack';
-import { colors, spacing, typography } from '../theme/theme';
 
-type Props = NativeStackScreenProps<RootStackParamList>;
+type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
-
-const HomeScreen: React.FC<Props> = ({ navigation }) => {
+export const HomeScreen: React.FC<Props> = ({ navigation }) => {
     return (
-        <View style={styles.container}>
+        <Screen>
+            {/* Top hero area */}
             <View style={styles.header}>
-                <Text style={styles.appName}>Roadify</Text>
-                <Text style={styles.subtitle}>Plan Smarter Road Trips</Text>
+                <View style={styles.logoRow}>
+                    <Image
+                        // LOGO BURADA
+                        source={require('../assets/logos/app-icon.png')}
+                        // istersen roadify-logo.png da kullanabilirsin:
+                        // source={require('../assets/logos/roadify-logo.png')}
+                        style={styles.logo}
+                    />
+                    <View>
+                        <Text style={styles.appName}>Roadify</Text>
+                        <Text style={styles.appSubtitle}>Smart Navigation</Text>
+                    </View>
+                </View>
+
+                {/* HERO GÖRSELİ */}
+                <Image
+                    source={require('../assets/illustrations/hero.png')}
+                    style={styles.heroImage}
+                    resizeMode="contain"
+                />
             </View>
 
-            <View style={styles.buttonsContainer}>
+            {/* Main action card */}
+            <View style={styles.card}>
+                <Text style={styles.cardTitle}>Get started</Text>
+                <Text style={styles.cardSubtitle}>
+                    Plan your next road trip with AI-powered suggestions.
+                </Text>
+
                 <PrimaryButton
-                    label="Plan Trip"
+                    title="Plan Trip"
                     onPress={() => navigation.navigate('RouteSelection')}
+                    style={{ marginTop: 16 }}
                 />
                 <PrimaryButton
-                    label="My Trips"
-                    onPress={() => navigation.navigate('TripPlanner')}
-                />
-                <PrimaryButton
-                    label="AI Assistant"
+                    title="AI Assistant"
                     onPress={() => navigation.navigate('AIScreen')}
+                    style={{ marginTop: 12 }}
                 />
                 <PrimaryButton
-                    label="Analytics"
+                    title="Analytics"
                     onPress={() => navigation.navigate('AnalyticsScreen')}
+                    style={{ marginTop: 12 }}
                 />
             </View>
-        </View>
-    );
-};
-
-type PrimaryButtonProps = {
-    label: string;
-    onPress: () => void;
-};
-
-const PrimaryButton: React.FC<PrimaryButtonProps> = ({ label, onPress }) => {
-    return (
-        <TouchableOpacity style={styles.primaryButton} onPress={onPress}>
-            <Text style={styles.primaryButtonText}>{label}</Text>
-        </TouchableOpacity>
+        </Screen>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: colors.background,
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.xl,
-        justifyContent: 'space-between',
-    },
     header: {
-        marginTop: spacing.xl,
+        marginBottom: 16,
+    },
+    logoRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    logo: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        marginRight: 10,
     },
     appName: {
-        color: colors.primary,
-        fontSize: typography.title,
-        fontWeight: 'bold',
+        color: '#FFFFFF',
+        fontSize: 22,
+        fontWeight: '800',
     },
-    subtitle: {
-        marginTop: spacing.sm,
-        color: colors.textSecondary,
-        fontSize: typography.subtitle,
+    appSubtitle: {
+        color: '#A7F3D0',
+        fontSize: 12,
     },
-    buttonsContainer: {
-        marginBottom: spacing.xl,
+    heroImage: {
+        marginTop: 16,
+        width: '100%',
+        height: 160,
+        borderRadius: 24,
     },
-    primaryButton: {
-        backgroundColor: colors.primary,
-        paddingVertical: spacing.md,
-        paddingHorizontal: spacing.lg,
-        borderRadius: 12,
-        marginBottom: spacing.md,
+    card: {
+        backgroundColor: 'rgba(15,23,42,0.96)',
+        borderRadius: 24,
+        padding: 20,
     },
-    primaryButtonText: {
-        color: colors.textPrimary,
-        fontSize: typography.body,
-        fontWeight: '600',
-        textAlign: 'center',
+    cardTitle: {
+        color: '#FFFFFF',
+        fontSize: 18,
+        fontWeight: '700',
+    },
+    cardSubtitle: {
+        color: '#9CA3AF',
+        marginTop: 4,
+        marginBottom: 4,
     },
 });
-
-export default HomeScreen;

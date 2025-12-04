@@ -1,18 +1,19 @@
 // App.tsx
-
-/**
- * App.tsx
- *
- * English:
- * Entry point of the Roadify mobile app. Wraps the root stack navigator.
- *
- * Türkçe Özet:
- * Roadify mobil uygulamasının giriş noktası. Root stack navigator'ı burada çağrılır.
- */
-
 import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RootStackNavigator } from './src/navigation/RootStack';
 
-export default function App() {
-    return <RootStackNavigator />;
-}
+const queryClient = new QueryClient();
+
+const App: React.FC = () => {
+    return (
+        <QueryClientProvider client={queryClient}>
+            <NavigationContainer>
+                <RootStackNavigator />
+            </NavigationContainer>
+        </QueryClientProvider>
+    );
+};
+
+export default App;

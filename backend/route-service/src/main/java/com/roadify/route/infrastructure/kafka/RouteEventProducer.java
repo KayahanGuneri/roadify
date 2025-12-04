@@ -22,7 +22,7 @@ public class RouteEventProducer {
      */
     public void sendRouteCreated(Route route) {
         RouteCreatedEvent event = RouteCreatedEvent.builder()
-                .routeId(route.getId())
+                .routeId(route.getId().toString())
                 .fromLat(route.getFromLat())
                 .fromLng(route.getFromLng())
                 .toLat(route.getToLat())
