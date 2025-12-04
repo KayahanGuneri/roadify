@@ -18,7 +18,7 @@ public final class RouteMapper {
         }
 
         return RouteDTO.builder()
-                .id(route.getId())
+                .id(route.getId().toString())
                 .fromLat(route.getFromLat())
                 .fromLng(route.getFromLng())
                 .toLat(route.getToLat())

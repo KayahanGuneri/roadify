@@ -1,0 +1,11 @@
+{
+  "dependencies": {
+    "react-native-linear-gradient": "^2.8.3",
+    "react-native-maps": "^1.26.19",
+    "react-native-vector-icons": "^10.3.0"
+  },
+  "devDependencies": {
+    "@types/react-native-linear-gradient": "^2.3.1",
+    "@types/react-native-maps": "^0.24.1"
+  }
+}

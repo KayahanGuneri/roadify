@@ -62,7 +62,7 @@ public class HttpOrsClient implements OrsClient {
         double durationMinutes = summary.getDuration() / 60.0; // seconds -> minutes
 
         return Route.builder()
-                .id(UUID.randomUUID().toString())
+                .id(UUID.randomUUID())
                 .fromLat(fromLat)
                 .fromLng(fromLng)
                 .toLat(toLat)
