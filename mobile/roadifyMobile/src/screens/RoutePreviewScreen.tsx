@@ -1,12 +1,19 @@
 // src/screens/RoutePreviewScreen.tsx
 import React from 'react';
-import { View, Text, StyleSheet, Image, ActivityIndicator } from 'react-native';
+import {
+    View,
+    Text,
+    StyleSheet,
+    ActivityIndicator,
+    TouchableOpacity,
+} from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { Screen } from '../components/Screen';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { RootStackParamList } from '../navigation/RootStack';
 import { useRouteById } from '../hooks/useRouteById';
+import { RouteMap } from '../components/RouteMap';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'RoutePreview'>;
 
@@ -19,7 +26,7 @@ export const RoutePreviewScreen: React.FC<Props> = ({ navigation, route }) => {
         return (
             <Screen>
                 <ActivityIndicator size="large" color="#6EE7B7" />
-                <Text style={{ color: '#E5E7EB', marginTop: 8 }}>Loading route…</Text>
+                <Text style={styles.loadingText}>Loading route…</Text>
             </Screen>
         );
     }
@@ -45,82 +52,71 @@ export const RoutePreviewScreen: React.FC<Props> = ({ navigation, route }) => {
 
     return (
         <Screen>
-            <Text style={styles.title}>Route Preview</Text>
+            <View style={styles.container}>
+                {/* Full-screen map */}
+                <RouteMap route={data} />
 
-            {/* ROUTE STATS CARD */}
-            <View style={styles.card}>
-                <Text style={styles.cardLabel}>Route ID</Text>
-                <Text style={styles.cardRouteId}>{routeId}</Text>
-
-                <View style={styles.row}>
-                    <View style={styles.stat}>
-                        <Text style={styles.statLabel}>Distance</Text>
-                        <Text style={styles.statValue}>{distanceKm.toFixed(1)} km</Text>
-                    </View>
-                    <View style={styles.stat}>
-                        <Text style={styles.statLabel}>Duration</Text>
-                        <Text style={styles.statValue}>
-                            {Math.floor(durationMinutes / 60)} h{' '}
-                            {Math.round(durationMinutes % 60)} m
-                        </Text>
-                    </View>
+                {/* Top title overlay (optional) */}
+                <View style={styles.topBar}>
+                    <TouchableOpacity onPress={() => navigation.goBack()}>
+                        <Text style={styles.backText}>‹ Back</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.topTitle}>Route Preview</Text>
+                    <View style={{ width: 40 }} />
                 </View>
 
-                <View style={styles.locations}>
-                    <View style={styles.locationBlock}>
-                        <Text style={styles.smallLabel}>From</Text>
-                        {/* ✅ Artık şehir adı gösteriyoruz, koordinat değil */}
-                        <Text style={styles.smallValue}>{fromCity}</Text>
+                {/* Bottom overlay card with stats */}
+                <View style={styles.bottomPanel}>
+                    <View style={styles.locationsRow}>
+                        <View style={styles.locationBlock}>
+                            <Text style={styles.smallLabel}>From</Text>
+                            <Text style={styles.smallValue}>{fromCity}</Text>
+                        </View>
+                        <View style={styles.locationBlock}>
+                            <Text style={styles.smallLabel}>To</Text>
+                            <Text style={styles.smallValue}>{toCity}</Text>
+                        </View>
                     </View>
-                    <View style={styles.locationBlock}>
-                        <Text style={styles.smallLabel}>To</Text>
-                        {/* ✅ Burada da toCity */}
-                        <Text style={styles.smallValue}>{toCity}</Text>
+
+                    <View style={styles.statsRow}>
+                        <View style={styles.stat}>
+                            <Text style={styles.statLabel}>Distance</Text>
+                            <Text style={styles.statValue}>{distanceKm.toFixed(1)} km</Text>
+                        </View>
+                        <View style={styles.stat}>
+                            <Text style={styles.statLabel}>Duration</Text>
+                            <Text style={styles.statValue}>
+                                {Math.floor(durationMinutes / 60)} h{' '}
+                                {Math.round(durationMinutes % 60)} m
+                            </Text>
+                        </View>
                     </View>
-                </View>
-            </View>
 
-            {/* MINI MAP CARD */}
-            <View style={styles.mapCard}>
-                <Text style={styles.mapTitle}>Route map</Text>
-                <Text style={styles.mapSubtitle}>
-                    A visual route preview and animated progress.
-                </Text>
-
-                <View style={styles.mapPreviewRow}>
-                    <Image
-                        source={require('../assets/illustrations/route-preview.png')}
-                        style={styles.mapImage}
-                        resizeMode="cover"
+                    <PrimaryButton
+                        title="Back to Home"
+                        onPress={() => navigation.navigate('Home')}
+                        style={{ marginTop: 12 }}
                     />
-                    <View style={styles.mapSideTextWrapper}>
-                        <Text style={styles.mapSideText}>
-                            Live map coming in{'\n'}Mobile Phase 3.
-                        </Text>
-                    </View>
                 </View>
-
-                <PrimaryButton
-                    title="Open Full Map (Soon)"
-                    onPress={() =>
-                        navigation.navigate('RouteMapFull', {
-                            routeId: routeId,
-                        })
-                    }
-                    style={{ marginTop: 12 }}
-                />
             </View>
-
-            <PrimaryButton
-                title="Back to Home"
-                onPress={() => navigation.navigate('Home')}
-                style={{ marginTop: 18 }}
-            />
         </Screen>
     );
 };
 
+const DARK_BG = '#020617';
+const PANEL_BG = 'rgba(2, 6, 23, 0.94)';
+const PRIMARY = '#34D399';
+const TEXT_PRIMARY = '#FFFFFF';
+const TEXT_SECONDARY = '#9CA3AF';
+
 const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+    },
+    loadingText: {
+        color: '#E5E7EB',
+        marginTop: 8,
+    },
     title: {
         color: '#FFFFFF',
         fontSize: 20,
@@ -131,46 +127,43 @@ const styles = StyleSheet.create({
         color: '#F97373',
         marginTop: 8,
     },
-    card: {
-        backgroundColor: '#020617',
-        borderRadius: 22,
-        padding: 18,
-        marginBottom: 14,
-    },
-    cardLabel: {
-        color: '#9CA3AF',
-        fontSize: 11,
-    },
-    cardRouteId: {
-        color: '#E5E7EB',
-        fontWeight: '600',
-        marginBottom: 8,
-        marginTop: 2,
-    },
-    row: {
+    topBar: {
+        position: 'absolute',
+        top: 16,
+        left: 16,
+        right: 16,
         flexDirection: 'row',
+        alignItems: 'center',
         justifyContent: 'space-between',
-        marginTop: 8,
     },
-    stat: { flex: 1 },
-    statLabel: {
-        color: '#9CA3AF',
-        fontSize: 12,
-    },
-    statValue: {
-        color: '#FFFFFF',
+    backText: {
+        color: TEXT_PRIMARY,
         fontSize: 16,
-        fontWeight: '600',
-        marginTop: 2,
     },
-    locations: {
+    topTitle: {
+        color: TEXT_PRIMARY,
+        fontSize: 18,
+        fontWeight: '700',
+    },
+    bottomPanel: {
+        position: 'absolute',
+        left: 16,
+        right: 16,
+        bottom: 24,
+        padding: 16,
+        borderRadius: 20,
+        backgroundColor: PANEL_BG,
+    },
+    locationsRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginTop: 12,
+        marginBottom: 8,
     },
-    locationBlock: { flex: 1 },
+    locationBlock: {
+        flex: 1,
+    },
     smallLabel: {
-        color: '#9CA3AF',
+        color: TEXT_SECONDARY,
         fontSize: 11,
     },
     smallValue: {
@@ -178,39 +171,23 @@ const styles = StyleSheet.create({
         fontSize: 13,
         marginTop: 2,
     },
-    mapCard: {
-        backgroundColor: '#020617',
-        borderRadius: 22,
-        padding: 18,
-    },
-    mapTitle: {
-        color: '#FFFFFF',
-        fontWeight: '600',
-        fontSize: 16,
-    },
-    mapSubtitle: {
-        color: '#9CA3AF',
-        marginTop: 4,
-        marginBottom: 10,
-    },
-    mapPreviewRow: {
+    statsRow: {
         flexDirection: 'row',
-        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginTop: 8,
     },
-    mapImage: {
-        flex: 2,
-        height: 90,
-        borderRadius: 18,
-        marginRight: 8,
-    },
-    mapSideTextWrapper: {
+    stat: {
         flex: 1,
-        justifyContent: 'center',
     },
-    mapSideText: {
-        color: '#E5E7EB',
-        fontSize: 11,
-        textAlign: 'right',
+    statLabel: {
+        color: TEXT_SECONDARY,
+        fontSize: 12,
+    },
+    statValue: {
+        color: TEXT_PRIMARY,
+        fontSize: 16,
+        fontWeight: '600',
+        marginTop: 2,
     },
 });
 

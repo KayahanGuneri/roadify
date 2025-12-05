@@ -18,6 +18,7 @@ repositories {
 dependencies {
     // Web / REST
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
 
     // WebClient (reactive HTTP client)
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
@@ -31,7 +32,6 @@ dependencies {
 
     // Kafka
     implementation 'org.springframework.kafka:spring-kafka'
-    // ❗ Bu satır ÇOK ÖNEMLİ: Message tipi buradan geliyor
     implementation 'org.springframework:spring-messaging'
 
     // Config & Eureka clients

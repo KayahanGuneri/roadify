@@ -3,6 +3,8 @@ package com.roadify.route.application;
 import com.roadify.route.domain.Route;
 import com.roadify.route.domain.RouteRepository;
 import com.roadify.route.infrastructure.kafka.RouteEventProducer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -13,6 +15,8 @@ import java.time.Duration;
  */
 @Service
 public class RouteService {
+
+    private static final Logger log = LoggerFactory.getLogger(RouteService.class);
 
     private static final Duration CACHE_TTL = Duration.ofHours(6);
 
@@ -32,7 +36,8 @@ public class RouteService {
     }
 
     /**
-     * Preview a route between two coordinates. Uses Redis cache first, falls back to ORS + DB.
+     * Preview a route between two coordinates.
+     * Tries Redis cache, but Redis hatalıysa endpoint ASLA patlamaz.
      */
     public Route previewRoute(double fromLat,
                               double fromLng,
@@ -41,9 +46,10 @@ public class RouteService {
 
         String cacheKey = buildCacheKey(fromLat, fromLng, toLat, toLng);
 
-        // 1) Check cache
-        Route cached = routeRedisTemplate.opsForValue().get(cacheKey);
+        // 1) Safe cache GET
+        Route cached = safeGetFromCache(cacheKey);
         if (cached != null) {
+            log.info("Returning route from Redis cache. key={}", cacheKey);
             return cached;
         }
 
@@ -53,10 +59,8 @@ public class RouteService {
         // 3) Persist in DB
         routeRepository.save(computed);
 
-        // 4) Store in cache with TTL
-        routeRedisTemplate
-                .opsForValue()
-                .set(cacheKey, computed, CACHE_TTL);
+        // 4) Safe cache PUT
+        safePutToCache(cacheKey, computed);
 
         // 5) Publish domain event to Kafka
         routeEventProducer.sendRouteCreated(computed);
@@ -76,5 +80,30 @@ public class RouteService {
                                  double toLng) {
 
         return "route:" + fromLat + ":" + fromLng + ":" + toLat + ":" + toLng;
+    }
+
+    /**
+     * Redis down / timeout olursa exception'ı yutar, null döner.
+     */
+    private Route safeGetFromCache(String key) {
+        try {
+            return routeRedisTemplate.opsForValue().get(key);
+        } catch (Exception e) {
+            log.warn("Failed to get route from Redis cache, key={}. Proceeding without cache.", key, e);
+            return null;
+        }
+    }
+
+    /**
+     * Redis down / timeout olursa sadece log yazar, devam eder.
+     */
+    private void safePutToCache(String key, Route route) {
+        try {
+            routeRedisTemplate
+                    .opsForValue()
+                    .set(key, route, CACHE_TTL);
+        } catch (Exception e) {
+            log.warn("Failed to put route into Redis cache, key={}. Proceeding without cache.", key, e);
+        }
     }
 }
