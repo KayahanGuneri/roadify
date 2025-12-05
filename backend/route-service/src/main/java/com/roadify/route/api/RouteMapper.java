@@ -17,15 +17,15 @@ public final class RouteMapper {
             return null;
         }
 
-        return RouteDTO.builder()
-                .id(route.getId().toString())
-                .fromLat(route.getFromLat())
-                .fromLng(route.getFromLng())
-                .toLat(route.getToLat())
-                .toLng(route.getToLng())
-                .distanceKm(route.getDistanceKm())
-                .durationMinutes(route.getDurationMinutes())
-                .geometry(route.getGeometry())
-                .build();
+        return new RouteDTO(
+                route.getId().toString(),
+                route.getDistanceKm(),
+                route.getDurationMinutes(),
+                route.getGeometry(),
+                route.getFromLat(),
+                route.getFromLng(),
+                route.getToLat(),
+                route.getToLng()
+        );
     }
 }

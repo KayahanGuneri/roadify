@@ -1,26 +1,36 @@
 package com.roadify.route.infrastructure.http;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.List;
 
 /**
- * DTO that matches OpenRouteService Directions V2 response.
+ * Minimal response mapping for ORS Directions API.
+ * We only care about:
+ * - routes[0].summary.distance (meters)
+ * - routes[0].summary.duration (seconds)
+ * - routes[0].geometry (kept as Object for flexibility)
  */
-@Data
+@Setter
+@Getter
 public class OrsDirectionsResponse {
 
     private List<OrsRoute> routes;
 
-    @Data
+    @Setter
+    @Getter
     public static class OrsRoute {
         private OrsSummary summary;
-        private String geometry;
+        private Object geometry; // keep generic, we'll serialize to JSON string
+
     }
 
-    @Data
+    @Setter
+    @Getter
     public static class OrsSummary {
-        private double distance;  // in meters
-        private double duration;  // in seconds
+        private double distance; // meters
+        private double duration; // seconds
+
     }
 }

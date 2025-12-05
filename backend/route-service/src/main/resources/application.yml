@@ -2,6 +2,13 @@ spring:
   application:
     name: route-service
 
+  config:
+    import: "optional:configserver:http://localhost:8888"
+
+  cloud:
+    config:
+      fail-fast: false
+
   datasource:
     url: jdbc:postgresql://roadify-postgres:5432/roadify
     username: roadify
@@ -44,3 +51,6 @@ management:
 ors:
   base-url: https://api.openrouteservice.org
   api-key: ${ORS_API_KEY}
+
+
+
