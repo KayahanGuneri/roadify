@@ -4,10 +4,13 @@ server:
 spring:
   application:
     name: eureka-server
+  cloud:
+    service-registry:
+      auto-registration:
+        enabled: false
 
 eureka:
   client:
-    # Eureka server itself does not register as a client
     register-with-eureka: false
     fetch-registry: false
   server:

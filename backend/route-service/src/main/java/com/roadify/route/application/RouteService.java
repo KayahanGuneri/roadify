@@ -37,7 +37,7 @@ public class RouteService {
 
     /**
      * Preview a route between two coordinates.
-     * Tries Redis cache, but Redis hatalıysa endpoint ASLA patlamaz.
+     * Tries Redis cache, but if Redis is faulty, the endpoint NEVER fires.
      */
     public Route previewRoute(double fromLat,
                               double fromLng,
