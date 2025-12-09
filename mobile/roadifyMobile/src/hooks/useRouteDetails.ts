@@ -2,9 +2,7 @@
 //
 // Roadify – Fetch route details by id
 //
-// Bu hook, verilen routeId için backend'den detayları çeker.
-// Android emulator için base URL olarak 10.0.2.2 kullanıyoruz
-// (localhost'un emulator karşılığı).
+
 
 import { useQuery } from '@tanstack/react-query';
 import { RouteDTO } from '../types/routes';
