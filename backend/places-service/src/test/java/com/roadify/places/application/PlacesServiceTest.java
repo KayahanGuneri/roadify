@@ -30,7 +30,7 @@ class PlacesServiceTest {
     private RouteServiceClient routeServiceClient;
 
     @Mock
-    private OpenTripMapClient openTripMapClient;
+    private GeoapifyClient geoapifyClient;
 
     @Mock
     private OverpassClient overpassClient;
@@ -82,7 +82,7 @@ class PlacesServiceTest {
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getName()).isEqualTo("Cached Cafe");
 
-        verifyNoInteractions(routeServiceClient, openTripMapClient, overpassClient, placeNormalizer, kafkaTemplate);
+        verifyNoInteractions(routeServiceClient, geoapifyClient, overpassClient, placeNormalizer, kafkaTemplate);
     }
 
     @Test
@@ -105,8 +105,8 @@ class PlacesServiceTest {
 
         // Raw places from providers
         RawPlace raw1 = RawPlace.builder()
-                .provider("OpenTripMap")
-                .externalId("otm-1")
+                .provider("Geoapify")
+                .externalId("geo-1")
                 .name("Demo Cafe")
                 .categoryTag("cafe")
                 .latitude(36.90)
@@ -124,14 +124,13 @@ class PlacesServiceTest {
                 .rating(null)
                 .build();
 
-        when(openTripMapClient.fetchPlaces(anyString()))
+        when(geoapifyClient.fetchPlaces(anyString()))
                 .thenReturn(List.of(raw1));
         when(overpassClient.fetchPlaces(anyString()))
                 .thenReturn(List.of(raw2));
 
-
         Place place1 = Place.builder()
-                .id("OpenTripMap:otm-1")
+                .id("Geoapify:geo-1")
                 .name("Demo Cafe")
                 .category(PlaceCategory.CAFE)
                 .latitude(36.90)
@@ -166,15 +165,11 @@ class PlacesServiceTest {
         assertThat(cachedArray).isNotNull();
         assertThat(cachedArray).hasSize(2);
 
-
         verify(eventProducer).publish(any(PlacesFetchedEvent.class));
 
-
         verify(routeServiceClient).getRouteById(routeId);
-        verify(openTripMapClient).fetchPlaces(anyString());
+        verify(geoapifyClient).fetchPlaces(anyString());
         verify(overpassClient).fetchPlaces(anyString());
         verify(placeNormalizer).normalize(anyList(), anyString());
-
     }
-
 }

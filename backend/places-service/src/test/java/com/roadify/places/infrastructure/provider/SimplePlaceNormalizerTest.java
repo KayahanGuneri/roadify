@@ -33,8 +33,8 @@ class SimplePlaceNormalizerTest {
     @Test
     void normalize_shouldConvertRawPlacesToDomainPlaces() {
         RawPlace raw1 = RawPlace.builder()
-                .provider("OpenTripMap")
-                .externalId("otm-1")
+                .provider("Geoapify")
+                .externalId("geo-1")
                 .name("Demo Cafe")
                 .categoryTag("cafe")
                 .latitude(36.90)
@@ -57,7 +57,7 @@ class SimplePlaceNormalizerTest {
         assertThat(result).hasSize(2);
 
         Place place1 = result.get(0);
-        assertThat(place1.getId()).isEqualTo("OpenTripMap:otm-1");
+        assertThat(place1.getId()).isEqualTo("Geoapify:geo-1");
         assertThat(place1.getName()).isEqualTo("Demo Cafe");
         assertThat(place1.getCategory()).isEqualTo(PlaceCategory.CAFE);
         assertThat(place1.getLatitude()).isEqualTo(36.90);

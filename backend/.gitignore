@@ -1,16 +1,26 @@
-# Backend build output'ları
-/build/
-config-server/build/
-route-service/build/
+########################
+# Global Build Outputs #
+########################
+**/build/
+**/out/
+**/tmp/
+**/libs/
 
-# Root seviyesindeki out ve .idea
-../out/
-../.idea/
-
-# IntelliJ ve Gradle
+########################
+# IDE / Tooling Files  #
+########################
 .idea/
 *.iml
 .gradle/
 
-# Local config (API key vs için)
-route-service/src/main/resources/application-local.yml
+########################
+# Local Configs (Secrets)
+########################
+**/application-local.yml
+**/application-docker.yml
+
+########################
+# Android Build Files
+########################
+mobile/roadifyMobile/android/app/build/
+mobile/roadifyMobile/android/build/
