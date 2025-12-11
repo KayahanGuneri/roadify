@@ -13,7 +13,10 @@ import org.springframework.web.reactive.function.client.WebClient;
 public class RouteServiceClientConfig {
 
     @Bean
-    public WebClient routeServiceWebClient(RouteServiceProperties properties, WebClient.Builder builder) {
+    public WebClient routeServiceWebClient(
+            RouteServiceProperties properties,
+            WebClient.Builder builder
+    ) {
         return builder
                 .baseUrl(properties.getBaseUrl())
                 .build();

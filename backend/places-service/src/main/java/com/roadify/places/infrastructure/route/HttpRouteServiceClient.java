@@ -22,21 +22,12 @@ public class HttpRouteServiceClient implements RouteServiceClient {
     @Override
     public RouteSummary getRouteById(String routeId) {
         // TODO: replace this stub with real HTTP call to route-service
-        return new RouteSummary(
-                routeId,
-                500.0,          // distanceKm
-                360.0,          // durationMinutes
-                "DUMMY_GEOMETRY" // geometry (we ignore for now)
-        );
-
-        /*
-        // Gerçek versiyon (sonra açacağız):
         return routeServiceWebClient
                 .get()
                 .uri("/v1/routes/{id}", routeId)
                 .retrieve()
                 .bodyToMono(RouteSummary.class)
                 .block();
-        */
+
     }
 }

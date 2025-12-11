@@ -1,16 +1,15 @@
 spring:
-  kafka:
-    bootstrap-servers: roadify-kafka:9092
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+  application:
+    name: places-service
 
 roadify:
   route-service:
-    base-url: http://localhost:8081  # gerçek route-service URL'i neyse
-  opentripmap:
-    base-url: https://api.opentripmap.com/0.1/en
-    api-key: YOUR_KEY_HERE
+    base-url: http://localhost:8082
+
+  geoapify:
+    base-url: https://api.geoapify.com/v2/places
+    api-key: "${GEOAPIFY_API_KEY:change-me}"
+    timeout-ms: 5000
+
   overpass:
     base-url: https://overpass-api.de/api/interpreter
-
