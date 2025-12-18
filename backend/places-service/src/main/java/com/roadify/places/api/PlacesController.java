@@ -9,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/v1/routes/{routeId}/places")
@@ -21,24 +20,36 @@ public class PlacesController {
     @GetMapping
     public List<PlaceResponseDTO> getPlaces(
             @PathVariable String routeId,
-            @RequestParam(required = false) PlaceCategory category,
+            @RequestParam(required = false) String category,
             @RequestParam(required = false) Double minRating,
             @RequestParam(required = false) Double maxDetourKm,
             @RequestParam(required = false) Integer limit,
             @RequestParam(required = false) Integer offset
     ) {
+        PlaceCategory parsedCategory = parseCategory(category);
+
         PlaceFilterCriteria criteria = PlaceFilterCriteria.builder()
-                .category(category)
+                .category(parsedCategory)
                 .minRating(minRating)
                 .maxDetourKm(maxDetourKm)
                 .limit(limit)
                 .offset(offset)
                 .build();
 
-        List<Place> places = placesService.getPlacesForRoute(routeId, criteria);
-        return places.stream()
+        return placesService.getPlacesForRoute(routeId, criteria)
+                .stream()
                 .map(this::toDto)
-                .collect(Collectors.toList());
+                .toList();
+    }
+
+    private PlaceCategory parseCategory(String category) {
+        if (category == null || category.isBlank()) return null;
+        try {
+            return PlaceCategory.valueOf(category.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            // Unknown category -> treat as null (ALL)
+            return null;
+        }
     }
 
     private PlaceResponseDTO toDto(Place place) {

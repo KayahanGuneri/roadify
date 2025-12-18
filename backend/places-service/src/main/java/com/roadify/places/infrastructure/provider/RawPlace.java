@@ -1,19 +1,41 @@
 package com.roadify.places.infrastructure.provider;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Value;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.List;
 
 /**
- * Provider-agnostic raw place structure before normalization.
+ * Raw place returned by external providers (Geoapify, Overpass, etc).
+ * Keep provider-specific fields here and normalize later.
  */
-@Value
+@Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class RawPlace {
-    String provider;   // e.g. "OpenTripMap" or "Overpass"
-    String externalId;
-    String name;
-    String categoryTag;   // provider-specific category / tag
-    double latitude;
-    double longitude;
-    Double rating;
+
+    private String provider;
+    private String externalId;
+
+    private String name;
+
+    /**
+     * Primary category tag (legacy / fallback).
+     * Example: "catering.restaurant" or "restaurant"
+     */
+    private String categoryTag;
+
+    /**
+     * Provider may return multiple categories.
+     * Example (Geoapify): ["catering.restaurant", "catering.fast_food", ...]
+     */
+    private List<String> categories;
+
+    private double latitude;
+    private double longitude;
+
+    private Double rating; // nullable
 }
