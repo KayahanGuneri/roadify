@@ -20,5 +20,5 @@ public class Place {
     private double latitude;
     private double longitude;
     private Double rating;   // nullable
-    private double detourKm;
+    private double detourKm; // primitive: never null, defaults to 0.0 if not set
 }
