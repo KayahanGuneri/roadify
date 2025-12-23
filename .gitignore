@@ -61,3 +61,5 @@ tsconfig.json
 # accidental folder
 git/
 
+**/build/
+**/.gradle/

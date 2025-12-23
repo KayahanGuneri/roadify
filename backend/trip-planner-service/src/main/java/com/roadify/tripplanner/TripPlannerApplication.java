@@ -1,12 +1,12 @@
 package com.roadify.tripplanner;
 
-/**
- * Entry point for the Trip Planner Service.
- * This service will manage Trips and TripStops per user.
- */
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
 public class TripPlannerApplication {
 
     public static void main(String[] args) {
-        // TODO: Turn this into a Spring Boot microservice in Phase 4.
+        SpringApplication.run(TripPlannerApplication.class, args);
     }
 }
