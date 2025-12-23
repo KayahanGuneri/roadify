@@ -10,14 +10,14 @@ import java.util.UUID;
  */
 public final class Trip {
 
-    private final String id;
+    private final UUID id;
     private final String userId;
     private final String routeId;
     private final String title;
     private final Instant createdAt;
 
-    private Trip(String id, String userId, String routeId, String title, Instant createdAt) {
-        this.id = requireNonBlank(id, "id");
+    private Trip(UUID id, String userId, String routeId, String title, Instant createdAt) {
+        this.id = Objects.requireNonNull(id, "id must not be null");
         this.userId = requireNonBlank(userId, "userId");
         this.routeId = requireNonBlank(routeId, "routeId");
         this.title = requireNonBlank(title, "title");
@@ -25,16 +25,14 @@ public final class Trip {
     }
 
     public static Trip createNew(String userId, String routeId, String title, Instant now) {
-        return new Trip(UUID.randomUUID().toString(), userId, routeId, title, now);
+        return new Trip(UUID.randomUUID(), userId, routeId, title, now); // toString yok
     }
 
-    public static Trip restore(String id, String userId, String routeId, String title, Instant createdAt) {
+    public static Trip restore(UUID id, String userId, String routeId, String title, Instant createdAt) {
         return new Trip(id, userId, routeId, title, createdAt);
     }
 
-    public String getId() {
-        return id;
-    }
+    public UUID getId() { return id; }
 
     public String getUserId() {
         return userId;

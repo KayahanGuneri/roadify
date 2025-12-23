@@ -6,7 +6,9 @@ import com.roadify.tripplanner.infrastructure.repository.rowmapper.TripRowMapper
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.sql.Timestamp;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * JDBC implementation of TripRepository.
@@ -34,19 +36,21 @@ public class JdbcTripRepository implements TripRepository {
                 trip.getUserId(),
                 trip.getRouteId(),
                 trip.getTitle(),
-                trip.getCreatedAt()
+                Timestamp.from(trip.getCreatedAt())
         );
     }
 
     @Override
     public Optional<Trip> findByIdAndUserId(String id, String userId) {
-        String sql = """
-            SELECT *
-            FROM trips
-            WHERE id = ? AND user_id = ?
-            """;
+        UUID tripId = UUID.fromString(id);
 
-        return jdbcTemplate.query(sql, tripRowMapper, id, userId)
+        String sql = """
+        SELECT *
+        FROM trips
+        WHERE id = ? AND user_id = ?
+        """;
+
+        return jdbcTemplate.query(sql, tripRowMapper, tripId, userId)
                 .stream()
                 .findFirst();
     }
