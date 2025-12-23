@@ -19,6 +19,7 @@ services:
     networks:
       - roadify-net
 
+
   # -----------------------------
   # Redis (AOF enabled)
   # -----------------------------
