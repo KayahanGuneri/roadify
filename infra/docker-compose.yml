@@ -1,4 +1,9 @@
+name: roadify
+
 services:
+  # -----------------------------
+  # PostgreSQL (Roadify app DB)
+  # -----------------------------
   postgres:
     image: postgres:16
     container_name: roadify-postgres
@@ -9,18 +14,29 @@ services:
       POSTGRES_DB: roadify
     ports:
       - "5432:5432"
+    volumes:
+      - roadify_pgdata:/var/lib/postgresql/data
     networks:
       - roadify-net
 
+  # -----------------------------
+  # Redis (AOF enabled)
+  # -----------------------------
   redis:
     image: redis:7
     container_name: roadify-redis
     restart: unless-stopped
     ports:
       - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - roadify_redisdata:/data
     networks:
       - roadify-net
 
+  # -----------------------------
+  # Zookeeper (Kafka ZK mode)
+  # -----------------------------
   zookeeper:
     image: bitnami/zookeeper:3.9
     container_name: roadify-zookeeper
@@ -29,43 +45,90 @@ services:
       ALLOW_ANONYMOUS_LOGIN: "yes"
     ports:
       - "2181:2181"
+    volumes:
+      - roadify_zookeeperdata:/bitnami/zookeeper
     networks:
       - roadify-net
 
+  # -----------------------------
+  # Kafka (Single broker, ZK mode)
+  # Host'tan çalışan client için advertised = localhost:9092
+  # -----------------------------
   kafka:
     image: bitnami/kafka:3.7
     container_name: roadify-kafka
     restart: unless-stopped
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
     environment:
       KAFKA_CFG_ZOOKEEPER_CONNECT: zookeeper:2181
       ALLOW_PLAINTEXT_LISTENER: "yes"
-    ports:
-      - "9092:9092"
-    depends_on:
-      - zookeeper
+
+      KAFKA_CFG_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+
+      KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+      KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
+      KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR: "1"
+
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true"
+    volumes:
+      - roadify_kafkadata:/bitnami/kafka
     networks:
       - roadify-net
 
+  # -----------------------------
+  # Keycloak DB (Postgres)
+  # External volume -> compose kazayla silmesin
+  # -----------------------------
+  keycloak-db:
+    image: postgres:16
+    container_name: roadify-keycloak-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: keycloak
+    volumes:
+      - roadify_keycloak_pgdata:/var/lib/postgresql/data
+    networks:
+      - roadify-net
+
+  # -----------------------------
+  # Keycloak (Postgres backend)
+  # -----------------------------
   keycloak:
     image: quay.io/keycloak/keycloak:25.0
     container_name: roadify-keycloak
-    command: start-dev
+    restart: unless-stopped
+    depends_on:
+      - keycloak-db
+    command: ["start-dev"]
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
+
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak
+
+      KC_PROXY_HEADERS: xforwarded
     ports:
       - "8081:8080"
     networks:
       - roadify-net
 
-  # backend service images will be added later (with Dockerfiles)
-  # config-server:
-  #   ...
-  # eureka-server:
-  #   ...
-  # gateway-bff-service:
-  #   ...
-
 networks:
   roadify-net:
     driver: bridge
+
+volumes:
+  roadify_pgdata:
+  roadify_redisdata:
+  roadify_zookeeperdata:
+  roadify_kafkadata:
+  roadify_keycloak_pgdata:
+    external: true
