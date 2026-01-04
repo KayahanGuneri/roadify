@@ -10,6 +10,7 @@ public class TripStopDto {
     private String id;
     private String tripId;
     private String placeId;
+    private String placeName; // NEW
     private int orderIndex;
     private Instant plannedArrivalTime;
     private Integer plannedDurationMinutes;
@@ -21,6 +22,7 @@ public class TripStopDto {
             String id,
             String tripId,
             String placeId,
+            String placeName,
             int orderIndex,
             Instant plannedArrivalTime,
             Integer plannedDurationMinutes
@@ -28,6 +30,7 @@ public class TripStopDto {
         this.id = id;
         this.tripId = tripId;
         this.placeId = placeId;
+        this.placeName = placeName;
         this.orderIndex = orderIndex;
         this.plannedArrivalTime = plannedArrivalTime;
         this.plannedDurationMinutes = plannedDurationMinutes;
@@ -55,6 +58,14 @@ public class TripStopDto {
 
     public void setPlaceId(String placeId) {
         this.placeId = placeId;
+    }
+
+    public String getPlaceName() {
+        return placeName;
+    }
+
+    public void setPlaceName(String placeName) {
+        this.placeName = placeName;
     }
 
     public int getOrderIndex() {

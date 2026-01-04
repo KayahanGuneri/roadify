@@ -17,9 +17,7 @@ export const TripPlannerScreen: React.FC<Props> = ({ navigation, route }) => {
     const { accessToken } = useAuth();
     const { currentTripId, setCurrentTripId } = useTripContext();
 
-    // route.params optional → safe read
     const tripIdFromParams = route.params?.tripId ?? null;
-
     const tripId = tripIdFromParams ?? currentTripId;
 
     const { tripQuery, updateStopsMutation } = useTrip(accessToken, tripId);
@@ -98,7 +96,8 @@ export const TripPlannerScreen: React.FC<Props> = ({ navigation, route }) => {
                             renderItem={({ item }) => (
                                 <View style={styles.stopRow}>
                                     <View style={{ flex: 1 }}>
-                                        <Text style={styles.stopTitle}>Place: {item.placeId}</Text>
+                                        {/* NEW: prefer placeName, fallback to placeId */}
+                                        <Text style={styles.stopTitle}>Place: {item.placeName ?? item.placeId}</Text>
                                         <Text style={styles.stopSub}>Order: {item.orderIndex}</Text>
                                     </View>
 

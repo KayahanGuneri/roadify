@@ -15,7 +15,7 @@ import type { RootStackParamList } from '../navigation/RootStack';
 import { Screen } from '../components/Screen';
 import { PlaceCard } from '../components/PlaceCard';
 import { usePlaces } from '../hooks/usePlaces';
-import type { PlacesFilters } from '../types/places';
+import type { PlacesFilters, PlaceDTO } from '../types/places';
 import { colors, spacing } from '../theme/theme';
 
 import { useAuth } from '../context/AuthContext';
@@ -24,28 +24,12 @@ import { useTrip } from '../hooks/useTrip';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'PlacesList'>;
 
-/**
- * PlacesListScreen
- *
- * English:
- * Lists route-based places with filters.
- * Provides "Add to trip" flow:
- * - If no currentTripId: create trip
- * - Then add a stop via updateTripStops
- *
- * Türkçe Özet:
- * routeId için mekanları listeler.
- * "Add to trip" ile:
- * - Eğer aktif trip yoksa createTrip yapar ve context'e yazar
- * - Sonra updateStops ile stop ekler
- */
 export const PlacesListScreen: React.FC<Props> = ({ navigation, route }) => {
     const { routeId } = route.params;
 
     const { accessToken } = useAuth();
     const { currentTripId, setCurrentTripId } = useTripContext();
 
-    // Trip hook: tripId null olsa bile createTripMutation & updateStopsMutation kullanılabilir.
     const { tripQuery, createTripMutation, updateStopsMutation } = useTrip(
         accessToken,
         currentTripId
@@ -88,7 +72,7 @@ export const PlacesListScreen: React.FC<Props> = ({ navigation, route }) => {
         return created.id;
     };
 
-    const onAddToTrip = async (placeId: string) => {
+    const onAddToTrip = async (place: PlaceDTO) => {
         try {
             if (!accessToken) {
                 Alert.alert('Login required', 'Please login (dev) from HomeScreen to add places to a trip.');
@@ -97,6 +81,9 @@ export const PlacesListScreen: React.FC<Props> = ({ navigation, route }) => {
 
             const tripId = await ensureTripId();
 
+            // Safer stop count:
+            // - If tripQuery isn't loaded yet, default to 0.
+            // - If loaded, use current stops length.
             const existingStopsCount = tripQuery.data?.stops?.length ?? 0;
 
             await updateStopsMutation.mutateAsync({
@@ -104,7 +91,8 @@ export const PlacesListScreen: React.FC<Props> = ({ navigation, route }) => {
                 req: {
                     add: [
                         {
-                            placeId,
+                            placeId: place.id,
+                            placeName: place.name ?? null, // NEW
                             orderIndex: existingStopsCount,
                             plannedArrivalTime: null,
                             plannedDurationMinutes: null,
@@ -161,9 +149,17 @@ export const PlacesListScreen: React.FC<Props> = ({ navigation, route }) => {
                     <TouchableOpacity
                         onPress={() => setCurrentTripId(null)}
                         disabled={!currentTripId || isMutatingTrip}
-                        style={[styles.clearTripBtn, (!currentTripId || isMutatingTrip) && styles.clearTripBtnDisabled]}
+                        style={[
+                            styles.clearTripBtn,
+                            (!currentTripId || isMutatingTrip) && styles.clearTripBtnDisabled,
+                        ]}
                     >
-                        <Text style={[styles.clearTripText, (!currentTripId || isMutatingTrip) && styles.clearTripTextDisabled]}>
+                        <Text
+                            style={[
+                                styles.clearTripText,
+                                (!currentTripId || isMutatingTrip) && styles.clearTripTextDisabled,
+                            ]}
+                        >
                             Clear
                         </Text>
                     </TouchableOpacity>
@@ -250,7 +246,7 @@ export const PlacesListScreen: React.FC<Props> = ({ navigation, route }) => {
                         renderItem={({ item }) => (
                             <PlaceCard
                                 place={item}
-                                onAddToTrip={() => onAddToTrip(item.id)}
+                                onAddToTrip={(p) => onAddToTrip(p)}
                             />
                         )}
                         showsVerticalScrollIndicator={false}
@@ -267,25 +263,21 @@ const styles = StyleSheet.create({
         paddingHorizontal: spacing.lg,
         paddingTop: spacing.lg,
     },
-
     header: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
         marginBottom: spacing.md,
     },
-
     backText: {
         color: colors.textPrimary,
         fontSize: 16,
     },
-
     title: {
         color: colors.textPrimary,
         fontSize: 20,
         fontWeight: '800',
     },
-
     tripBtn: {
         paddingHorizontal: spacing.md,
         paddingVertical: spacing.xs,
@@ -306,7 +298,6 @@ const styles = StyleSheet.create({
     tripBtnTextDisabled: {
         color: 'rgba(148, 163, 184, 0.7)',
     },
-
     tripStatusBar: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -343,7 +334,6 @@ const styles = StyleSheet.create({
     clearTripTextDisabled: {
         color: 'rgba(148, 163, 184, 0.7)',
     },
-
     filtersCard: {
         borderRadius: 16,
         padding: spacing.md,
@@ -352,24 +342,20 @@ const styles = StyleSheet.create({
         borderColor: 'rgba(255,255,255,0.08)',
         marginBottom: spacing.md,
     },
-
     sectionTitle: {
         color: colors.textPrimary,
         fontSize: 14,
         fontWeight: '800',
         marginBottom: spacing.sm,
     },
-
     filterRow: {
         marginTop: spacing.sm,
     },
-
     label: {
         color: colors.textSecondary,
         fontSize: 12,
         marginBottom: spacing.xs,
     },
-
     input: {
         height: 42,
         borderRadius: 12,
@@ -379,19 +365,16 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.10)',
     },
-
     statusRow: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
         marginTop: spacing.md,
     },
-
     statusText: {
         color: colors.textSecondary,
         fontSize: 12,
     },
-
     refreshBtn: {
         paddingHorizontal: spacing.md,
         paddingVertical: spacing.xs,
@@ -400,25 +383,21 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: 'rgba(52, 211, 153, 0.35)',
     },
-
     refreshText: {
         color: colors.primary,
         fontSize: 12,
         fontWeight: '800',
     },
-
     center: {
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
         paddingHorizontal: spacing.lg,
     },
-
     loadingText: {
         color: colors.textPrimary,
         marginTop: spacing.sm,
     },
-
     errorTitle: {
         color: colors.textPrimary,
         fontSize: 16,
@@ -426,12 +405,10 @@ const styles = StyleSheet.create({
         marginBottom: spacing.xs,
         textAlign: 'center',
     },
-
     errorText: {
         color: '#F97373',
         textAlign: 'center',
     },
-
     retryBtn: {
         marginTop: spacing.md,
         paddingHorizontal: spacing.lg,
@@ -441,12 +418,10 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: 'rgba(249, 115, 115, 0.35)',
     },
-
     retryText: {
         color: '#F97373',
         fontWeight: '800',
     },
-
     emptyTitle: {
         color: colors.textPrimary,
         fontSize: 16,
@@ -454,12 +429,10 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginBottom: spacing.xs,
     },
-
     emptyText: {
         color: colors.textSecondary,
         textAlign: 'center',
     },
-
     listContent: {
         paddingBottom: spacing.xl,
     },

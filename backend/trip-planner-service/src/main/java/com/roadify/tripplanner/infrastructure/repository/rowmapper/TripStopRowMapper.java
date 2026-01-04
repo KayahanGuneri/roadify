@@ -8,13 +8,6 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.UUID;
 
-/**
- * Maps a DB row to TripStop domain object.
- *
- * DB types:
- * - id: uuid
- * - trip_id: uuid
- */
 public class TripStopRowMapper implements RowMapper<TripStop> {
 
     @Override
@@ -29,6 +22,7 @@ public class TripStopRowMapper implements RowMapper<TripStop> {
                 id.toString(),
                 tripId.toString(),
                 rs.getString("place_id"),
+                rs.getString("place_name"), // NEW
                 rs.getInt("order_index"),
                 arrivalTs != null ? arrivalTs.toInstant() : null,
                 rs.getObject("planned_duration_minutes", Integer.class)

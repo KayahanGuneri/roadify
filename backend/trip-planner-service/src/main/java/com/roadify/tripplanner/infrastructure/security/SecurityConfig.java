@@ -9,6 +9,12 @@ import org.springframework.security.web.SecurityFilterChain;
 
 /**
  * Resource Server security configuration for trip-planner-service.
+ *
+ * English:
+ * Validates bearer JWT and protects /v1/trips/** endpoints.
+ *
+ * Türkçe Özet:
+ * JWT bearer token doğrular ve /v1/trips/** endpointlerini korur.
  */
 @Configuration
 @EnableMethodSecurity

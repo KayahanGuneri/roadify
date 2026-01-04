@@ -14,6 +14,7 @@ public final class TripStop {
     private final String id;
     private final String tripId;
     private final String placeId;
+    private final String placeName; // NEW
     private final int orderIndex;
     private final Instant plannedArrivalTime;
     private final Integer plannedDurationMinutes;
@@ -22,6 +23,7 @@ public final class TripStop {
             String id,
             String tripId,
             String placeId,
+            String placeName,
             int orderIndex,
             Instant plannedArrivalTime,
             Integer plannedDurationMinutes
@@ -29,6 +31,9 @@ public final class TripStop {
         this.id = requireNonBlank(id, "id");
         this.tripId = requireNonBlank(tripId, "tripId");
         this.placeId = requireNonBlank(placeId, "placeId");
+
+        // placeName is allowed to be null/blank; UI can fallback to placeId.
+        this.placeName = normalizeNullable(placeName);
 
         if (orderIndex < 0) {
             throw new IllegalArgumentException("orderIndex must be >= 0");
@@ -46,22 +51,40 @@ public final class TripStop {
     public static TripStop createNew(
             String tripId,
             String placeId,
+            String placeName,
             int orderIndex,
             Instant plannedArrivalTime,
             Integer plannedDurationMinutes
     ) {
-        return new TripStop(UUID.randomUUID().toString(), tripId, placeId, orderIndex, plannedArrivalTime, plannedDurationMinutes);
+        return new TripStop(
+                UUID.randomUUID().toString(),
+                tripId,
+                placeId,
+                placeName,
+                orderIndex,
+                plannedArrivalTime,
+                plannedDurationMinutes
+        );
     }
 
     public static TripStop restore(
             String id,
             String tripId,
             String placeId,
+            String placeName,
             int orderIndex,
             Instant plannedArrivalTime,
             Integer plannedDurationMinutes
     ) {
-        return new TripStop(id, tripId, placeId, orderIndex, plannedArrivalTime, plannedDurationMinutes);
+        return new TripStop(
+                id,
+                tripId,
+                placeId,
+                placeName,
+                orderIndex,
+                plannedArrivalTime,
+                plannedDurationMinutes
+        );
     }
 
     public String getId() {
@@ -74,6 +97,10 @@ public final class TripStop {
 
     public String getPlaceId() {
         return placeId;
+    }
+
+    public Optional<String> getPlaceName() {
+        return Optional.ofNullable(placeName);
     }
 
     public int getOrderIndex() {
@@ -95,6 +122,12 @@ public final class TripStop {
         return value;
     }
 
+    private static String normalizeNullable(String value) {
+        if (value == null) return null;
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -113,6 +146,7 @@ public final class TripStop {
                 "id='" + id + '\'' +
                 ", tripId='" + tripId + '\'' +
                 ", placeId='" + placeId + '\'' +
+                ", placeName='" + placeName + '\'' +
                 ", orderIndex=" + orderIndex +
                 ", plannedArrivalTime=" + plannedArrivalTime +
                 ", plannedDurationMinutes=" + plannedDurationMinutes +

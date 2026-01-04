@@ -13,13 +13,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * JDBC implementation of TripStopRepository.
- *
- * Important:
- * - DB columns trip_stops.id and trip_stops.trip_id are UUID.
- * - Domain uses String ids; we convert String -> UUID at repository boundary.
- */
 @Repository
 public class JdbcTripStopRepository implements TripStopRepository {
 
@@ -43,24 +36,23 @@ public class JdbcTripStopRepository implements TripStopRepository {
 
         String sql = """
             INSERT INTO trip_stops
-              (id, trip_id, place_id, order_index, planned_arrival_time, planned_duration_minutes)
+              (id, trip_id, place_id, place_name, order_index, planned_arrival_time, planned_duration_minutes)
             VALUES
-              (:id, :tripId, :placeId, :orderIndex, :plannedArrivalTime, :plannedDurationMinutes)
+              (:id, :tripId, :placeId, :placeName, :orderIndex, :plannedArrivalTime, :plannedDurationMinutes)
             """;
 
         List<Map<String, Object>> batchValues = stops.stream()
                 .map(stop -> {
                     Map<String, Object> map = new HashMap<>();
 
-                    // Convert String -> UUID for UUID columns
                     map.put("id", UUID.fromString(stop.getId()));
                     map.put("tripId", UUID.fromString(stop.getTripId()));
 
                     map.put("placeId", stop.getPlaceId());
+                    map.put("placeName", stop.getPlaceName().orElse(null)); // NEW
+
                     map.put("orderIndex", stop.getOrderIndex());
 
-                    // If DB column is timestamptz/timestamp:
-                    // JDBC driver accepts java.sql.Timestamp reliably.
                     map.put("plannedArrivalTime",
                             stop.getPlannedArrivalTime()
                                     .map(Timestamp::from)
@@ -105,7 +97,6 @@ public class JdbcTripStopRepository implements TripStopRepository {
 
         UUID tripUuid = UUID.fromString(tripId);
 
-        // Convert stopIds (String) -> UUID list for UUID column "id"
         List<UUID> stopUuids = stopIds.stream()
                 .map(UUID::fromString)
                 .toList();
