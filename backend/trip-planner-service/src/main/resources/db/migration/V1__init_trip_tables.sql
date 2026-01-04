@@ -1,5 +1,7 @@
 -- V1__init_trip_tables.sql
 
+CREATE SCHEMA IF NOT EXISTS trip_planner;
+SET search_path TO trip_planner;
 CREATE TABLE IF NOT EXISTS trips (
                                      id UUID PRIMARY KEY,
                                      user_id TEXT NOT NULL,

@@ -7,6 +7,7 @@ import { RouteSelectionScreen } from '../screens/RouteSelectionScreen';
 import { RoutePreviewScreen } from '../screens/RoutePreviewScreen';
 import { RouteMapFullScreen } from '../screens/RouteMapFullScreen';
 import { PlacesListScreen } from '../screens/PlacesListScreen';
+import { TripPlannerScreen } from '../screens/TripPlannerScreen';
 import { AIScreen } from '../screens/AIScreen';
 import { AnalyticsScreen } from '../screens/AnalyticsScreen';
 
@@ -18,8 +19,7 @@ import { AnalyticsScreen } from '../screens/AnalyticsScreen';
  * Defines navigation routes and typed params for each screen.
  *
  * Türkçe Özet:
- * Uygulamanın ana (root) navigation stack’i. Screen isimlerini ve parametre tiplerini burada tanımlarız.
- * M3 kapsamında PlacesList ekranı bu stack’e eklenir ve RoutePreview'dan routeId ile navigate edilir.
+ * Uygulamanın ana navigation stack’i. Screen isimlerini ve parametre tiplerini burada tanımlarız.
  */
 export type RootStackParamList = {
     Home: undefined;
@@ -39,6 +39,8 @@ export type RootStackParamList = {
         routeId: string;
     };
 
+    TripPlanner: { tripId?: string | null } | undefined;
+
     AIScreen: undefined;
     AnalyticsScreen: undefined;
 };
@@ -47,17 +49,15 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export const RootStackNavigator: React.FC = () => {
     return (
-        <Stack.Navigator
-            initialRouteName="Home"
-            screenOptions={{ headerShown: false }}
-        >
+        <Stack.Navigator initialRouteName="Home" screenOptions={{ headerShown: false }}>
             <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="RouteSelection" component={RouteSelectionScreen} />
             <Stack.Screen name="RoutePreview" component={RoutePreviewScreen} />
             <Stack.Screen name="RouteMapFull" component={RouteMapFullScreen} />
-
-            {/* M3: Places list */}
             <Stack.Screen name="PlacesList" component={PlacesListScreen} />
+
+            {/* M4: Trip planner */}
+            <Stack.Screen name="TripPlanner" component={TripPlannerScreen} />
 
             <Stack.Screen name="AIScreen" component={AIScreen} />
             <Stack.Screen name="AnalyticsScreen" component={AnalyticsScreen} />
