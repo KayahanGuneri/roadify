@@ -3,7 +3,7 @@
 // Roadify – Fetch route details by id
 //
 
-
+/*
 import { useQuery } from '@tanstack/react-query';
 import { RouteDTO } from '../types/routes';
 
@@ -38,14 +38,15 @@ async function fetchRouteDetails(routeId: string): Promise<RouteDTO> {
     return json;
 }
 
-/**
+
  * useRouteDetails
  *
  * @param routeId - Backend'de oluşturulmuş rota id'si
  *
  * React Query kullanarak rota detaylarını çeker.
  * enabled: !!routeId olduğu için routeId gelmeden istek atmaz.
- */
+
+
 export function useRouteDetails(routeId: string | undefined) {
     return useQuery<RouteDTO, Error>({
         queryKey: ['routeDetails', routeId],
@@ -54,3 +55,4 @@ export function useRouteDetails(routeId: string | undefined) {
         staleTime: 1000 * 30, // 30 saniye
     });
 }
+*/
