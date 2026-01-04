@@ -12,6 +12,7 @@ export type TripStopDTO = {
     id: string;
     tripId: string;
     placeId: string;
+    placeName?: string | null; // NEW
     orderIndex: number;
     plannedArrivalTime: string | null; // Instant -> ISO string
     plannedDurationMinutes: number | null;
@@ -36,6 +37,7 @@ export type UpdateTripStopsRequestDTO = {
         id?: string;
         tripId?: string;
         placeId: string;
+        placeName?: string | null; // NEW
         orderIndex: number;
         plannedArrivalTime?: string | null;
         plannedDurationMinutes?: number | null;

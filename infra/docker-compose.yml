@@ -117,10 +117,16 @@ services:
 
       # ---- FIX (issuer must be stable for gateway) ----
       KC_HTTP_ENABLED: "true"
-      KC_HOSTNAME: "localhost"
-      KC_HOSTNAME_PORT: "8081"
+
+      # Stable issuer URLs (critical)
+      KC_HOSTNAME_URL: "http://localhost:8081"
+      KC_HOSTNAME_ADMIN_URL: "http://localhost:8081"
+
       KC_HOSTNAME_STRICT: "false"
       KC_HOSTNAME_STRICT_HTTPS: "false"
+
+      # Proxy headers only if you are behind a reverse proxy (optional)
+      # KC_PROXY_HEADERS: "xforwarded"
       # -----------------------------------------------
 
       KC_PROXY_HEADERS: xforwarded

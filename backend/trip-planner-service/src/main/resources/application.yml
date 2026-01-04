@@ -9,8 +9,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:8081/realms/roadify
-
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8081/realms/roadify}
 
   datasource:
     url: jdbc:postgresql://localhost:5432/roadify?currentSchema=trip_planner
