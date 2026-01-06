@@ -4,76 +4,127 @@ import com.roadify.tripplanner.api.dto.CreateTripRequest;
 import com.roadify.tripplanner.api.dto.TripResponse;
 import com.roadify.tripplanner.api.dto.UpdateTripStopsRequest;
 import com.roadify.tripplanner.application.service.TripServiceImpl;
+import com.roadify.tripplanner.infrastructure.security.SecurityConfig;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.mockito.ArgumentCaptor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithAnonymousUser;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.boot.test.mock.mockito.MockBean;
 
 import java.time.Instant;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+@WebMvcTest(controllers = TripController.class)
+@Import(SecurityConfig.class)
 class TripControllerTest {
 
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
+    private TripServiceImpl tripServiceImpl;
+
     @Test
-    void createTrip_shouldReturn201Created() {
+    void createTrip_withJwt_shouldReturn201Created_andUseSubAsUserId() throws Exception {
         // Arrange
-        TripServiceImpl service = mock(TripServiceImpl.class);
-        TripController controller = new TripController(service);
+        TripResponse expected = new TripResponse(
+                "trip-1", "user-1", "route-1", "Title", Instant.now(), List.of()
+        );
 
-        CreateTripRequest request = new CreateTripRequest("route-1", "Title");
-        TripResponse expected = new TripResponse("trip-1", "user-1", "route-1", "Title", Instant.now(), List.of());
+        when(tripServiceImpl.createTrip(anyString(), any(CreateTripRequest.class)))
+                .thenReturn(expected);
 
-        when(service.createTrip("user-1", request)).thenReturn(expected);
+        // Act + Assert
+        mockMvc.perform(post("/v1/trips")
+                        .with(jwt().jwt(jwt -> jwt.subject("user-1")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "routeId": "route-1",
+                                  "title": "Title"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON));
 
-        // Act
-        ResponseEntity<TripResponse> response = controller.createTrip("user-1", request);
-
-        // Assert
-        assertEquals(HttpStatus.CREATED, response.getStatusCode());
-        assertSame(expected, response.getBody());
-        verify(service).createTrip("user-1", request);
-        verifyNoMoreInteractions(service);
+        // Verify userId passed from JWT sub
+        ArgumentCaptor<String> userIdCaptor = ArgumentCaptor.forClass(String.class);
+        verify(tripServiceImpl).createTrip(userIdCaptor.capture(), any(CreateTripRequest.class));
+        assertEquals("user-1", userIdCaptor.getValue());
+        verifyNoMoreInteractions(tripServiceImpl);
     }
 
     @Test
-    void getTrip_shouldReturn200Ok() {
+    void getTrip_withJwt_shouldReturn200Ok_andUseSubAsUserId() throws Exception {
         // Arrange
-        TripServiceImpl service = mock(TripServiceImpl.class);
-        TripController controller = new TripController(service);
+        TripResponse expected = new TripResponse(
+                "trip-1", "user-1", "route-1", "Title", Instant.now(), List.of()
+        );
 
-        TripResponse expected = new TripResponse("trip-1", "user-1", "route-1", "Title", Instant.now(), List.of());
-        when(service.getTrip("user-1", "trip-1")).thenReturn(expected);
+        when(tripServiceImpl.getTrip(eq("user-1"), eq("trip-1")))
+                .thenReturn(expected);
 
-        // Act
-        ResponseEntity<TripResponse> response = controller.getTrip("user-1", "trip-1");
+        // Act + Assert
+        mockMvc.perform(get("/v1/trips/trip-1")
+                        .with(jwt().jwt(jwt -> jwt.subject("user-1"))))
+                .andExpect(status().isOk());
 
-        // Assert
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertSame(expected, response.getBody());
-        verify(service).getTrip("user-1", "trip-1");
-        verifyNoMoreInteractions(service);
+        verify(tripServiceImpl).getTrip("user-1", "trip-1");
+        verifyNoMoreInteractions(tripServiceImpl);
     }
 
     @Test
-    void updateStops_shouldReturn200Ok() {
+    void updateStops_withJwt_shouldReturn200Ok_andUseSubAsUserId() throws Exception {
         // Arrange
-        TripServiceImpl service = mock(TripServiceImpl.class);
-        TripController controller = new TripController(service);
+        TripResponse expected = new TripResponse(
+                "trip-1", "user-1", "route-1", "Title", Instant.now(), List.of()
+        );
 
-        UpdateTripStopsRequest request = new UpdateTripStopsRequest(List.of(), List.of());
-        TripResponse expected = new TripResponse("trip-1", "user-1", "route-1", "Title", Instant.now(), List.of());
+        when(tripServiceImpl.updateStops(anyString(), anyString(), any(UpdateTripStopsRequest.class)))
+                .thenReturn(expected);
 
-        when(service.updateStops("user-1", "trip-1", request)).thenReturn(expected);
+        // Act + Assert
+        mockMvc.perform(put("/v1/trips/trip-1/stops")
+                        .with(jwt().jwt(jwt -> jwt.subject("user-1")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "add": [],
+                                  "remove": []
+                                }
+                                """))
+                .andExpect(status().isOk());
 
-        // Act
-        ResponseEntity<TripResponse> response = controller.updateStops("user-1", "trip-1", request);
+        ArgumentCaptor<String> userIdCaptor = ArgumentCaptor.forClass(String.class);
+        verify(tripServiceImpl).updateStops(userIdCaptor.capture(), eq("trip-1"), any(UpdateTripStopsRequest.class));
+        assertEquals("user-1", userIdCaptor.getValue());
+        verifyNoMoreInteractions(tripServiceImpl);
+    }
 
-        // Assert
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertSame(expected, response.getBody());
-        verify(service).updateStops("user-1", "trip-1", request);
-        verifyNoMoreInteractions(service);
+    @Test
+    @WithAnonymousUser
+    void createTrip_withoutJwt_shouldReturn401() throws Exception {
+        mockMvc.perform(post("/v1/trips")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "routeId": "route-1",
+                                  "title": "Title"
+                                }
+                                """))
+                .andExpect(status().isUnauthorized());
+
+        verifyNoInteractions(tripServiceImpl);
     }
 }
