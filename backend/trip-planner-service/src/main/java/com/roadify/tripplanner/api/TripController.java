@@ -7,6 +7,8 @@ import com.roadify.tripplanner.application.service.TripServiceImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 @RestController
 @RequestMapping("/v1/trips")
@@ -18,32 +20,32 @@ public class TripController {
         this.tripServiceImpl = tripServiceImpl;
     }
 
-    // 1) Create Trip
     @PostMapping
     public ResponseEntity<TripResponse> createTrip(
-            @RequestHeader("X-User-Id") String userId,
+            @AuthenticationPrincipal Jwt jwt,
             @RequestBody CreateTripRequest request
     ) {
+        String userId = jwt.getSubject();
         TripResponse created = tripServiceImpl.createTrip(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
-    // 2) Get Trip by id
     @GetMapping("/{tripId}")
     public ResponseEntity<TripResponse> getTrip(
-            @RequestHeader("X-User-Id") String userId,
+            @AuthenticationPrincipal Jwt jwt,
             @PathVariable String tripId
     ) {
+        String userId = jwt.getSubject();
         return ResponseEntity.ok(tripServiceImpl.getTrip(userId, tripId));
     }
 
-    // 3) Update stops
     @PutMapping("/{tripId}/stops")
     public ResponseEntity<TripResponse> updateStops(
-            @RequestHeader("X-User-Id") String userId,
+            @AuthenticationPrincipal Jwt jwt,
             @PathVariable String tripId,
             @RequestBody UpdateTripStopsRequest request
     ) {
+        String userId = jwt.getSubject();
         return ResponseEntity.ok(tripServiceImpl.updateStops(userId, tripId, request));
     }
 }

@@ -1,3 +1,4 @@
+/*
 package com.roadify.tripplanner.infrastructure.security;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -21,10 +22,12 @@ public class JwtDecoderConfig {
         // Default validators: timestamp (exp/nbf) vb.
         OAuth2TokenValidator<Jwt> withTimestamp = JwtValidators.createDefault();
 
-        // Burada issuer validator EKLEMİYORUZ (iss farklı olduğu için).
-        // İstersen ayrıca audience/azp gibi claim validator ekleyebiliriz.
+
         decoder.setJwtValidator(withTimestamp);
 
         return decoder;
     }
 }
+
+
+ */
