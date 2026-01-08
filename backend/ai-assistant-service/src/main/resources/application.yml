@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: ai-assistant-service
+
+  cloud:
+    config:
+      enabled: false
+      import-check:
+        enabled: false
+
+eureka:
+  client:
+    enabled: false
+
+server:
+  port: 8096
+
+roadify:
+  route-service:
+    # Şu an için ai-assistant-service route-service'e direkt HTTP ile gidecek
+    base-url: http://localhost:8082
+
+  places-service:
+    # Aynı şekilde places-service için de direkt URL
+    base-url: http://localhost:8084
+
+ai:
+  llm:
+    # Ollama default host/port
+    base-url: http://localhost:11434
+    # İleride config-server'a taşıyabileceğimiz model adı
+    model: "llama3.1:8b"

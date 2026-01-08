@@ -63,3 +63,4 @@ git/
 
 **/build/
 **/.gradle/
+"backend/ai-assistant-service/build/" 
