@@ -73,7 +73,7 @@ class RouteJdbcRepositoryImplIT {
         String id = UUID.randomUUID().toString();
 
         Route route = Route.builder()
-                .id(id)
+                .id(UUID.fromString(id))
                 .fromLat(36.8841)
                 .fromLng(30.7056)
                 .toLat(41.0082)
