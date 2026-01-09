@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.*;
 
 /**
  * Public API for AI trip assistant.
+ *
+ * Expects caller (gateway) to forward user id in X-User-Id header.
  */
 @RestController
 @RequestMapping("/v1/ai/chat")
@@ -16,11 +18,6 @@ public class AIChatController {
 
     private final AIService aiService;
 
-    /**
-     * AI chat endpoint.
-     *
-     * Expects caller (gateway) to forward user id in X-User-Id header.
-     */
     @PostMapping
     public AIChatResponseDTO chat(
             @RequestHeader("X-User-Id") String userId,

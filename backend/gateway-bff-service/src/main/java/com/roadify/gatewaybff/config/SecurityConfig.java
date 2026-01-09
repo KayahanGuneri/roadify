@@ -32,16 +32,17 @@ public class SecurityConfig {
                         .pathMatchers(HttpMethod.POST, "/api/routes/preview").permitAll()
                         .pathMatchers(HttpMethod.GET,  "/api/routes/*").permitAll()
 
-                        // Public places-by-route
-                        .pathMatchers(HttpMethod.GET, "/api/routes/*/places/**").permitAll()
+                        // Places by route
+                        .pathMatchers(HttpMethod.GET,  "/api/routes/*/places/**").permitAll()
+                        // >>> AI-assistant ve mobile tarafının kullandığı POST endpoint:
+                        .pathMatchers(HttpMethod.POST, "/api/routes/*/places/**").authenticated()
 
                         // Protected areas
                         .pathMatchers("/api/trips/**").authenticated()
                         .pathMatchers("/api/ai/**").authenticated()
                         .pathMatchers("/api/analytics/**").authenticated()
 
-                        // Default: deny or permit?
-                        // Safer default: deny all.
+                        // Safer default: deny all
                         .anyExchange().denyAll()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
