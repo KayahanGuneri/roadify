@@ -4,13 +4,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.roadify.aiassistant.api.dto.AIChatRequestDTO;
 import com.roadify.aiassistant.api.dto.AIChatResponseDTO;
-import com.roadify.aiassistant.domain.llm.LLMClient;
 import com.roadify.aiassistant.application.client.PlacesServiceClient;
 import com.roadify.aiassistant.application.client.RouteServiceClient;
 import com.roadify.aiassistant.application.dto.PlaceDetailsDTO;
 import com.roadify.aiassistant.application.dto.RouteDetailsDTO;
 import com.roadify.aiassistant.application.model.AIContext;
-
+import com.roadify.aiassistant.domain.llm.LLMClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -28,6 +27,9 @@ public class AIService {
     private final LLMClient llmClient;
     private final ObjectMapper objectMapper;
 
+    /**
+     * Main entry point for AI chat orchestration.
+     */
     public AIChatResponseDTO chat(String userId, AIChatRequestDTO request) {
 
         // 1. Route details

@@ -14,8 +14,11 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.DoubleSummaryStatistics;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -34,10 +37,10 @@ public class PlacesService {
     public List<Place> getPlacesForRoute(String routeId, PlaceFilterCriteria criteria) {
 
         // 0) Incoming criteria log (kanıt/diagnostic)
-        log.info("[PlacesService] Incoming criteria: routeId={}, category={}, minRating={}, maxDetourKm={}, limit={}, offset={}",
+        log.info(
+                "[PlacesService] Incoming criteria: routeId={}, category={}, maxDetourKm={}, limit={}, offset={}",
                 routeId,
                 criteria.getCategory(),
-                criteria.getMinRating(),
                 criteria.getMaxDetourKm(),
                 criteria.getLimit(),
                 criteria.getOffset()
@@ -78,7 +81,7 @@ public class PlacesService {
         List<Place> normalized = placeNormalizer.normalize(rawPlaces, geometry);
         log.info("[PlacesService] Normalized places count = {}", normalized.size());
 
-// 4.0) DETOUR ENRICH (NEW)
+        // 4.0) DETOUR ENRICH (NEW)
         List<com.roadify.places.infrastructure.geo.PolylineDecoder.LatLon> routePoints =
                 com.roadify.places.infrastructure.geo.PolylineDecoder.decode(geometry);
 
@@ -91,8 +94,8 @@ public class PlacesService {
                                 p.getLatitude(), p.getLongitude(), routePoints
                         );
 
-                        // Place is @Data => has setters
-                        Place copy = Place.builder()
+                        // Place is @Data => has setters, ama burada immutable kopya oluşturuyoruz
+                        return Place.builder()
                                 .id(p.getId())
                                 .name(p.getName())
                                 .category(p.getCategory())
@@ -101,15 +104,12 @@ public class PlacesService {
                                 .rating(p.getRating())
                                 .detourKm(detourKm)
                                 .build();
-
-                        return copy;
                     })
                     .toList();
         }
 
-// 4.1) Detour stats (kanıt)
+        // 4.1) Detour stats (kanıt)
         logDetourStats(normalized);
-
 
         // 5) Cache write policy:
         // - Normalized boş değilse
@@ -117,13 +117,28 @@ public class PlacesService {
         boolean allProvidersOk = geo.success() && over.success();
 
         if (!normalized.isEmpty() && allProvidersOk) {
-            placesRedisTemplate.opsForValue().set(baseKey, normalized.toArray(new Place[0]), BASE_CACHE_TTL);
-            log.info("[PlacesService] Cached BASE {} places under key={} (ttl={})", normalized.size(), baseKey, BASE_CACHE_TTL);
+            placesRedisTemplate.opsForValue().set(
+                    baseKey,
+                    normalized.toArray(new Place[0]),
+                    BASE_CACHE_TTL
+            );
+            log.info(
+                    "[PlacesService] Cached BASE {} places under key={} (ttl={})",
+                    normalized.size(),
+                    baseKey,
+                    BASE_CACHE_TTL
+            );
         } else if (!allProvidersOk) {
-            log.warn("[PlacesService] Skipping BASE cache write because a provider failed. geoOk={}, overOk={}",
-                    geo.success(), over.success());
+            log.warn(
+                    "[PlacesService] Skipping BASE cache write because a provider failed. geoOk={}, overOk={}",
+                    geo.success(),
+                    over.success()
+            );
         } else {
-            log.info("[PlacesService] Normalized list is empty. Skipping BASE cache write for key={}", baseKey);
+            log.info(
+                    "[PlacesService] Normalized list is empty. Skipping BASE cache write for key={}",
+                    baseKey
+            );
         }
 
         // 6) Publish event (istersen sadece allProvidersOk iken de publish edebilirsin; şimdilik aynı)
@@ -145,10 +160,18 @@ public class PlacesService {
                 .mapToDouble(Place::getDetourKm)
                 .summaryStatistics();
 
-        long zeros = places.stream().filter(p -> p.getDetourKm() == 0.0).count();
+        long zeros = places.stream()
+                .filter(p -> p.getDetourKm() == 0.0)
+                .count();
 
-        log.info("[PlacesService] detour stats: count={}, zeros={}, min={}, max={}, avg={}",
-                places.size(), zeros, stats.getMin(), stats.getMax(), stats.getAverage());
+        log.info(
+                "[PlacesService] detour stats: count={}, zeros={}, min={}, max={}, avg={}",
+                places.size(),
+                zeros,
+                stats.getMin(),
+                stats.getMax(),
+                stats.getAverage()
+        );
     }
 
     private ProviderFetchResult fetchFromGeoapifySafelyWithStatus(String geometry) {
@@ -175,17 +198,36 @@ public class PlacesService {
         return "route:" + routeId + ":places:BASE";
     }
 
+    /**
+     * Rating filtresi kaldırıldı.
+     * Şu an sadece:
+     *  - category
+     *  - maxDetourKm
+     *  - offset/limit
+     * üzerinden filtreleme yapıyoruz.
+     */
     private List<Place> applyFilter(List<Place> places, PlaceFilterCriteria criteria) {
-        if (places == null || places.isEmpty()) return List.of();
+        if (places == null || places.isEmpty()) {
+            return List.of();
+        }
 
-        int safeOffset = (criteria.getOffset() == null || criteria.getOffset() < 0) ? 0 : criteria.getOffset();
-        int safeLimit = (criteria.getLimit() == null || criteria.getLimit() <= 0) ? places.size() : criteria.getLimit();
+        int safeOffset = (criteria.getOffset() == null || criteria.getOffset() < 0)
+                ? 0
+                : criteria.getOffset();
+
+        int safeLimit = (criteria.getLimit() == null || criteria.getLimit() <= 0)
+                ? places.size()
+                : criteria.getLimit();
 
         return places.stream()
+                // Category filter
                 .filter(p -> criteria.getCategory() == null || p.getCategory() == criteria.getCategory())
-                .filter(p -> criteria.getMinRating() == null ||
-                        (p.getRating() != null && p.getRating() >= criteria.getMinRating()))
+                // Rating filter YOK (Overpass rating=null olduğu için hepsi eleniyordu)
+                // .filter(p -> criteria.getMinRating() == null ||
+                //         (p.getRating() != null && p.getRating() >= criteria.getMinRating()))
+                // Detour filter
                 .filter(p -> criteria.getMaxDetourKm() == null || p.getDetourKm() <= criteria.getMaxDetourKm())
+                // Pagination
                 .skip(safeOffset)
                 .limit(safeLimit)
                 .toList();
@@ -212,8 +254,11 @@ public class PlacesService {
 
         producer.publish(event);
 
-        log.info("[PlacesService] Published PlacesFetchedEvent for routeId={}, totalCount={}",
-                routeId, places.size());
+        log.info(
+                "[PlacesService] Published PlacesFetchedEvent for routeId={}, totalCount={}",
+                routeId,
+                places.size()
+        );
     }
 
     private record ProviderFetchResult(boolean success, List<RawPlace> places) {}
