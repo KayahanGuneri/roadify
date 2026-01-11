@@ -3,10 +3,13 @@ package com.roadify.aiassistant.infrastructure.client;
 import com.roadify.aiassistant.application.client.PlacesServiceClient;
 import com.roadify.aiassistant.application.dto.PlaceDetailsDTO;
 import com.roadify.aiassistant.api.dto.AISuggestionFiltersDTO;
+import com.roadify.aiassistant.domain.places.PlacesServiceException;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URLEncoder;
@@ -14,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @Component
+@Slf4j
 public class HttpPlacesServiceClient implements PlacesServiceClient {
 
     private final RestTemplate restTemplate;
@@ -35,13 +39,11 @@ public class HttpPlacesServiceClient implements PlacesServiceClient {
 
         HttpHeaders headers = new HttpHeaders();
 
-        // JWT forward
         String authHeader = httpServletRequest.getHeader(HttpHeaders.AUTHORIZATION);
         if (authHeader != null && !authHeader.isBlank()) {
             headers.set(HttpHeaders.AUTHORIZATION, authHeader);
         }
 
-        // X-User-Id forward
         String userIdHeader = httpServletRequest.getHeader("X-User-Id");
         if (userIdHeader != null && !userIdHeader.isBlank()) {
             headers.set("X-User-Id", userIdHeader);
@@ -49,7 +51,6 @@ public class HttpPlacesServiceClient implements PlacesServiceClient {
 
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
-        // Build URL
         StringBuilder urlBuilder = new StringBuilder(
                 gatewayBaseUrl + "/api/routes/" + routeId + "/places"
         );
@@ -84,19 +85,43 @@ public class HttpPlacesServiceClient implements PlacesServiceClient {
 
         String url = urlBuilder.toString();
 
-        ResponseEntity<PlaceDetailsDTO[]> response = restTemplate.exchange(
-                url,
-                HttpMethod.GET,
-                entity,
-                PlaceDetailsDTO[].class
-        );
+        try {
+            log.debug("Calling places-service via gateway. url={}", url);
 
-        if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
-            throw new IllegalStateException(
-                    "Failed to fetch places from gateway. Status: " + response.getStatusCode()
+            ResponseEntity<PlaceDetailsDTO[]> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    entity,
+                    PlaceDetailsDTO[].class
+            );
+
+            if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
+                log.error("places-service returned non-2xx or empty body. status={}, url={}",
+                        response.getStatusCode(), url);
+                throw new PlacesServiceException(
+                        "Failed to fetch places from gateway. Status: " + response.getStatusCode(),
+                        routeId
+                );
+            }
+
+            return List.of(response.getBody());
+
+        } catch (RestClientException ex) {
+            log.error("Error while calling places-service via gateway. url={}", url, ex);
+            throw new PlacesServiceException(
+                    "I/O error while calling places-service via gateway",
+                    routeId,
+                    ex
+            );
+        } catch (PlacesServiceException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            log.error("Unexpected error while calling places-service via gateway. url={}", url, ex);
+            throw new PlacesServiceException(
+                    "Unexpected error while calling places-service via gateway",
+                    routeId,
+                    ex
             );
         }
-
-        return List.of(response.getBody());
     }
 }

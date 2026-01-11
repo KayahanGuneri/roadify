@@ -1,89 +1,148 @@
 package com.roadify.aiassistant.infrastructure.client.llm;
 
-import com.roadify.aiassistant.api.dto.AIChatResponseDTO;
-import com.roadify.aiassistant.api.dto.SuggestionDTO;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.roadify.aiassistant.domain.llm.LLMClient;
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
+import com.roadify.aiassistant.domain.llm.LLMClientException;
+import com.roadify.aiassistant.domain.llm.LLMRequest;
+import com.roadify.aiassistant.domain.llm.LLMResponse;
+import com.roadify.aiassistant.domain.llm.LLMTimeoutException;
+import com.roadify.aiassistant.infrastructure.config.LLMProperties;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
+import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 
+import java.net.SocketTimeoutException;
 import java.util.List;
-import java.util.Map;
 
 /**
- * HTTP-based implementation of LLMClient.
- *
- * Şu an için dummy implementasyon çalışıyor; ileride Ollama / başka bir LLM'e
- * gerçek HTTP çağrısı ekleyeceğiz.
+ * Türkçe Özet:
+ * Ollama'nın native /api/chat endpoint'ine HTTP çağrısı yapan LLMClient implementasyonu.
  */
-@Service
-@RequiredArgsConstructor
+@Slf4j
 public class HttpLLMClient implements LLMClient {
 
-    private final RestTemplate httpClient;
+    private final RestClient restClient;
+    private final LLMProperties llmProperties;
 
-    @Value("${roadify.llm.base-url:http://localhost:11434}")
-    private String baseUrl;
-
-    @Value("${roadify.llm.chat-path:/api/chat}")
-    private String chatPath;
-
-    @Override
-    public AIChatResponseDTO generateSuggestions(String contextJson, String userMessage) {
-        // Gerçek LLM çağrısı için örnek request body (şimdilik kullanılmıyor)
-        Map<String, Object> requestBody = Map.of(
-                "model", "roadify-trip-assistant",
-                "messages", List.of(
-                        Map.of(
-                                "role", "system",
-                                "content", "You are an AI assistant helping users plan smarter road trips."
-                        ),
-                        Map.of(
-                                "role", "user",
-                                "content", buildPrompt(contextJson, userMessage)
-                        )
-                )
-        );
-
-        // TODO: LLM ayağa kalktığında gerçek HTTP çağrısını buraya koyacağız.
-        // Örnek:
-        // var response = httpClient.postForObject(
-        //         baseUrl + chatPath,
-        //         requestBody,
-        //         OllamaChatResponse.class
-        // );
-        // Sonra OllamaChatResponse -> AIChatResponseDTO map edilecek.
-
-        // Şimdilik dummy cevap döndürüyoruz:
-        SuggestionDTO suggestion = SuggestionDTO.builder()
-                .placeId("dummy-place-id")
-                .name("Dummy Place (LLM not wired yet)")
-                .shortReason("This is a placeholder suggestion until LLM is integrated.")
-                .build();
-
-        return AIChatResponseDTO.builder()
-                .answer("LLM is not fully integrated yet; this is a dummy response.")
-                .suggestions(List.of(suggestion))
-                .build();
+    public HttpLLMClient(RestClient restClient, LLMProperties llmProperties) {
+        this.restClient = restClient;
+        this.llmProperties = llmProperties;
     }
 
-    private String buildPrompt(String contextJson, String userMessage) {
-        return """
-                You are an AI assistant for a road trip planning app called Roadify.
-                You receive:
-                - a JSON context describing the current route, candidate places along the route and filters
-                - a user message with additional preferences
+    @Override
+    public LLMResponse chat(LLMRequest request) {
+        String model = request.getModel() != null ? request.getModel() : llmProperties.getModel();
 
-                Your job:
-                - Choose the best places for the user
-                - Return a short, structured summary
+        OllamaChatRequest ollamaRequest = buildOllamaRequest(model, request);
 
-                JSON context:
-                %s
+        try {
+            log.debug("Calling Ollama chat API with model={}", model);
 
-                User message:
-                %s
-                """.formatted(contextJson, userMessage);
+            OllamaChatResponse response = restClient.post()
+                    .uri("/api/chat")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .body(ollamaRequest)
+                    .retrieve()
+                    .body(OllamaChatResponse.class);
+
+            if (response == null || response.message == null) {
+                throw new LLMClientException("Ollama API returned empty response");
+            }
+
+            return LLMResponse.builder()
+                    .answer(response.message.content)
+                    .suggestions(List.of()) // Structured suggestions parsing can be added later
+                    .model(response.model)
+                    .promptTokens(response.promptEvalCount)
+                    .completionTokens(response.evalCount)
+                    .totalTokens(response.evalCount != null && response.promptEvalCount != null
+                            ? response.evalCount + response.promptEvalCount
+                            : null)
+                    .build();
+
+        } catch (RestClientResponseException ex) {
+            // Non-2xx HTTP status codes
+            log.error("Ollama API returned error status={}, body={}", ex.getRawStatusCode(), ex.getResponseBodyAsString());
+            throw new LLMClientException(
+                    "Ollama API error: HTTP " + ex.getRawStatusCode() + " - " + ex.getMessage(), ex
+            );
+        } catch (ResourceAccessException ex) {
+            // I/O errors, including timeouts
+            if (ex.getCause() instanceof SocketTimeoutException) {
+                throw new LLMTimeoutException("Timeout while calling Ollama API", ex);
+            }
+            throw new LLMClientException("I/O error while calling Ollama API", ex);
+        } catch (LLMClientException ex) {
+            // Already a domain-specific exception, just propagate
+            throw ex;
+        } catch (Exception ex) {
+            // Fallback for unexpected errors
+            throw new LLMClientException("Unexpected error while calling Ollama API", ex);
+        }
+    }
+
+    private OllamaChatRequest buildOllamaRequest(String model, LLMRequest request) {
+        OllamaMessage systemMessage = null;
+        if (request.getSystemPrompt() != null && !request.getSystemPrompt().isBlank()) {
+            systemMessage = new OllamaMessage("system", request.getSystemPrompt());
+        }
+
+        OllamaMessage userMessage = new OllamaMessage("user", request.getPrompt());
+
+        List<OllamaMessage> messages = systemMessage != null
+                ? List.of(systemMessage, userMessage)
+                : List.of(userMessage);
+
+        Double temperature = request.getTemperature() != null
+                ? request.getTemperature()
+                : llmProperties.getTemperature();
+
+        Integer maxTokens = request.getMaxTokens() != null
+                ? request.getMaxTokens()
+                : llmProperties.getMaxTokens();
+
+        OllamaOptions options = new OllamaOptions(temperature, maxTokens);
+
+        return new OllamaChatRequest(model, messages, false, options);
+    }
+
+    // ===== Ollama request/response DTOs (internal only) =====
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private record OllamaChatRequest(
+            String model,
+            List<OllamaMessage> messages,
+            boolean stream,
+            OllamaOptions options
+    ) {
+    }
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private record OllamaMessage(
+            String role,
+            String content
+    ) {
+    }
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private record OllamaOptions(
+            @JsonProperty("temperature") Double temperature,
+            @JsonProperty("num_predict") Integer numPredict
+    ) {
+    }
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private record OllamaChatResponse(
+            String model,
+            OllamaMessage message,
+            Boolean done,
+            @JsonProperty("total_duration") Long totalDuration,
+            @JsonProperty("prompt_eval_count") Integer promptEvalCount,
+            @JsonProperty("eval_count") Integer evalCount
+    ) {
     }
 }
