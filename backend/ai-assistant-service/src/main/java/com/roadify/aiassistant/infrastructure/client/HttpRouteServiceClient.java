@@ -2,21 +2,17 @@ package com.roadify.aiassistant.infrastructure.client;
 
 import com.roadify.aiassistant.application.client.RouteServiceClient;
 import com.roadify.aiassistant.application.dto.RouteDetailsDTO;
+import com.roadify.aiassistant.domain.route.RouteServiceException;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
-/**
- * HTTP implementation of RouteServiceClient.
- *
- * Gateway üzerinden route-service'e istek atar:
- *   GET {gatewayBaseUrl}/api/routes/{routeId}
- *
- * Mevcut request'teki Authorization ve X-User-Id header'larını forward eder.
- */
 @Component
+@Slf4j
 public class HttpRouteServiceClient implements RouteServiceClient {
 
     private final RestTemplate restTemplate;
@@ -35,7 +31,6 @@ public class HttpRouteServiceClient implements RouteServiceClient {
 
     @Override
     public RouteDetailsDTO getRouteById(String routeId) {
-        // 1) Caller'dan gelen Authorization header'ını al
         String authHeader = httpServletRequest.getHeader("Authorization");
 
         HttpHeaders headers = new HttpHeaders();
@@ -43,7 +38,6 @@ public class HttpRouteServiceClient implements RouteServiceClient {
             headers.set(HttpHeaders.AUTHORIZATION, authHeader);
         }
 
-        // 2) X-User-Id'yi de forward et (gateway bunu kullanıyor)
         String userIdHeader = httpServletRequest.getHeader("X-User-Id");
         if (userIdHeader != null && !userIdHeader.isBlank()) {
             headers.set("X-User-Id", userIdHeader);
@@ -51,23 +45,46 @@ public class HttpRouteServiceClient implements RouteServiceClient {
 
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
-        // 3) Artık route-service'e direkt değil, GATEWAY üzerinden gidiyoruz:
-        //    /routes/v1/... değil /api/routes/{id}
         String url = gatewayBaseUrl + "/api/routes/" + routeId;
 
-        ResponseEntity<RouteDetailsDTO> response = restTemplate.exchange(
-                url,
-                HttpMethod.GET,
-                entity,
-                RouteDetailsDTO.class
-        );
+        try {
+            log.debug("Calling route-service via gateway. url={}", url);
 
-        if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
-            throw new IllegalStateException(
-                    "Failed to fetch route details from gateway. Status: " + response.getStatusCode()
+            ResponseEntity<RouteDetailsDTO> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    entity,
+                    RouteDetailsDTO.class
+            );
+
+            if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
+                log.error("route-service returned non-2xx or empty body. status={}, url={}",
+                        response.getStatusCode(), url);
+                throw new RouteServiceException(
+                        "Failed to fetch route details from gateway. Status: " + response.getStatusCode(),
+                        routeId
+                );
+            }
+
+            return response.getBody();
+
+        } catch (RestClientException ex) {
+            log.error("Error while calling route-service via gateway. url={}", url, ex);
+            throw new RouteServiceException(
+                    "I/O error while calling route-service via gateway",
+                    routeId,
+                    ex
+            );
+        } catch (RouteServiceException ex) {
+
+            throw ex;
+        } catch (Exception ex) {
+            log.error("Unexpected error while calling route-service via gateway. url={}", url, ex);
+            throw new RouteServiceException(
+                    "Unexpected error while calling route-service via gateway",
+                    routeId,
+                    ex
             );
         }
-
-        return response.getBody();
     }
 }

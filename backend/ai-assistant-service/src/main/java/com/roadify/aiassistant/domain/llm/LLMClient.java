@@ -18,12 +18,7 @@ import com.roadify.aiassistant.api.dto.AIChatResponseDTO;
  */
 public interface LLMClient {
 
-    /**
-     * Generate route-based place suggestions using an LLM.
-     *
-     * @param contextJson pre-built JSON containing route, places and filters
-     * @param userMessage raw message from the end user
-     * @return structured AIChatResponseDTO with suggestions and explanation
-     */
-    AIChatResponseDTO generateSuggestions(String contextJson, String userMessage);
+
+
+    LLMResponse chat(LLMRequest request);
 }
