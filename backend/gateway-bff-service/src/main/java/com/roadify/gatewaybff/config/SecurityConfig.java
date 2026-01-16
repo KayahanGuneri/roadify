@@ -1,61 +1,61 @@
+// backend/gateway-bff-service/src/main/java/com/roadify/gatewaybff/config/SecurityConfig.java
 package com.roadify.gatewaybff.config;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
-import org.springframework.security.oauth2.core.OAuth2TokenValidator;
-import org.springframework.security.oauth2.jwt.*;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 
+/**
+ * Gateway BFF security configuration.
+ *
+ * English:
+ * - Validates JWT from Keycloak on incoming /api/** requests.
+ * - Protects /api/mobile/** (mobile BFF endpoints) with "authenticated".
+ *
+ * Türkçe Özet:
+ * - /api/** isteklerinde Keycloak JWT doğrulaması yapar.
+ * - /api/mobile/** altındaki BFF endpointlerini authenticated kullanıcıya açar.
+ */
 @Configuration
 @EnableWebFluxSecurity
+@EnableReactiveMethodSecurity
 public class SecurityConfig {
-
-    @Value("${security.jwt.jwk-set-uri}")
-    private String jwkSetUri;
-
-    @Value("${security.jwt.issuer}")
-    private String issuer;
 
     @Bean
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
-                .authorizeExchange(ex -> ex
-                        // Ops / health
+                .authorizeExchange(exchanges -> exchanges
+                        // Public endpoints
                         .pathMatchers("/actuator/**").permitAll()
+                        .pathMatchers(HttpMethod.POST, "/logout").permitAll()
 
-                        // Public routes
-                        .pathMatchers(HttpMethod.POST, "/api/routes/preview").permitAll()
-                        .pathMatchers(HttpMethod.GET,  "/api/routes/*").permitAll()
+                        // ROUTES
+                        .pathMatchers(HttpMethod.POST, "/api/routes/preview").authenticated()
+                        .pathMatchers(HttpMethod.GET, "/api/routes/*").authenticated()
+                        .pathMatchers("/api/routes/*/places/**").authenticated()
 
-                        // Places by route
-                        .pathMatchers(HttpMethod.GET,  "/api/routes/*/places/**").permitAll()
-                        // >>> AI-assistant ve mobile tarafının kullandığı POST endpoint:
-                        .pathMatchers(HttpMethod.POST, "/api/routes/*/places/**").authenticated()
-
-                        // Protected areas
+                        // TRIPS
                         .pathMatchers("/api/trips/**").authenticated()
+
+                        // AI (web BFF)
                         .pathMatchers("/api/ai/**").authenticated()
+
+                        // AI (mobile BFF) – ÖNEMLİ: mobile path burası
+                        .pathMatchers("/api/mobile/**").authenticated()
+
+                        // Analytics
                         .pathMatchers("/api/analytics/**").authenticated()
 
-                        // Safer default: deny all
+                        // Geri kalan her yer kapalı
                         .anyExchange().denyAll()
                 )
-                .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(jwt -> jwt.jwtDecoder(jwtDecoder()))
-                )
+                // Resource server: JWT doğrulama (issuer / jwk-set-uri ayarlarını application-local.yml'de verdik)
+                .oauth2ResourceServer(oauth2 -> oauth2.jwt())
                 .build();
-    }
-
-    @Bean
-    public ReactiveJwtDecoder jwtDecoder() {
-        NimbusReactiveJwtDecoder decoder = NimbusReactiveJwtDecoder.withJwkSetUri(jwkSetUri).build();
-        OAuth2TokenValidator<Jwt> issuerValidator = JwtValidators.createDefaultWithIssuer(issuer);
-        decoder.setJwtValidator(issuerValidator);
-        return decoder;
     }
 }
