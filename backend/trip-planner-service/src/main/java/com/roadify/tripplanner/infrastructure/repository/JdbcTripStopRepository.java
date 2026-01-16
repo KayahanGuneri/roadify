@@ -34,22 +34,32 @@ public class JdbcTripStopRepository implements TripStopRepository {
             return;
         }
 
+        // Postgres-specific UPSERT:
+        // Aynı (trip_id, order_index) için kayıt varsa, insert yerine update yapar.
         String sql = """
             INSERT INTO trip_stops
               (id, trip_id, place_id, place_name, order_index, planned_arrival_time, planned_duration_minutes)
             VALUES
               (:id, :tripId, :placeId, :placeName, :orderIndex, :plannedArrivalTime, :plannedDurationMinutes)
+            ON CONFLICT (trip_id, order_index) DO UPDATE
+            SET
+              id = EXCLUDED.id,
+              place_id = EXCLUDED.place_id,
+              place_name = EXCLUDED.place_name,
+              planned_arrival_time = EXCLUDED.planned_arrival_time,
+              planned_duration_minutes = EXCLUDED.planned_duration_minutes
             """;
 
         List<Map<String, Object>> batchValues = stops.stream()
                 .map(stop -> {
                     Map<String, Object> map = new HashMap<>();
 
+                    // Domain'de id ve tripId String, DB'de UUID
                     map.put("id", UUID.fromString(stop.getId()));
                     map.put("tripId", UUID.fromString(stop.getTripId()));
 
                     map.put("placeId", stop.getPlaceId());
-                    map.put("placeName", stop.getPlaceName().orElse(null)); // NEW
+                    map.put("placeName", stop.getPlaceName().orElse(null));
 
                     map.put("orderIndex", stop.getOrderIndex());
 
@@ -65,7 +75,10 @@ public class JdbcTripStopRepository implements TripStopRepository {
                 })
                 .toList();
 
-        namedParameterJdbcTemplate.batchUpdate(sql, batchValues.toArray(new Map[0]));
+        @SuppressWarnings("unchecked")
+        Map<String, Object>[] batchArray = batchValues.toArray(new Map[0]);
+
+        namedParameterJdbcTemplate.batchUpdate(sql, batchArray);
     }
 
     @Override

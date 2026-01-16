@@ -31,6 +31,16 @@ public class GeoapifyHttpClient implements GeoapifyClient {
     @CircuitBreaker(name = "geoapify")
     public List<RawPlace> fetchPlaces(String routeGeometry) {
 
+        // 0) API key guard – local profile'da yanlış/placeholder key ile çağrı atma
+        String apiKey = properties.getApiKey();
+        if (apiKey == null ||
+                apiKey.isBlank() ||
+                "change-me".equals(apiKey)) {
+
+            log.warn("[Geoapify] API key is not configured or is placeholder (roadify.geoapify.api-key). Skipping Geoapify call.");
+            return Collections.emptyList();
+        }
+
         // TODO: decode from route geometry. For now we use a fixed point for local tests.
         double lat = extractLat(routeGeometry);
         double lon = extractLon(routeGeometry);
@@ -57,7 +67,7 @@ public class GeoapifyHttpClient implements GeoapifyClient {
                             .queryParam("filter", filter)
                             .queryParam("limit", 50)
                             .queryParam("lang", "en")
-                            .queryParam("apiKey", properties.getApiKey())
+                            .queryParam("apiKey", apiKey)
                             .build()
                     )
                     .retrieve()
