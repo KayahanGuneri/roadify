@@ -1,0 +1,2 @@
+ALTER TABLE route
+    ALTER COLUMN geometry DROP NOT NULL;

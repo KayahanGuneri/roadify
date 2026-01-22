@@ -30,10 +30,10 @@ public class JdbcPopularPlaceCategoriesRepository implements PopularPlaceCategor
     @Override
     public void incrementCategoryCount(LocalDate date, String category, int incrementBy) {
         String sql = """
-                INSERT INTO popular_place_categories (usage_date, category, count)
+                INSERT INTO analytics.popular_place_categories (usage_date, category, count)
                 VALUES (:usage_date, :category, :increment_by)
                 ON CONFLICT (usage_date, category)
-                DO UPDATE SET count = popular_place_categories.count + :increment_by
+                DO UPDATE SET count = analytics.popular_place_categories.count + :increment_by
                 """;
 
         MapSqlParameterSource params = new MapSqlParameterSource()
@@ -48,7 +48,7 @@ public class JdbcPopularPlaceCategoriesRepository implements PopularPlaceCategor
     public List<PopularPlaceCategoryStat> findTopCategories(LocalDate from, LocalDate to, int limit) {
         String sql = """
                 SELECT usage_date, category, count
-                FROM popular_place_categories
+                FROM analytics.popular_place_categories
                 WHERE usage_date BETWEEN :from AND :to
                 ORDER BY count DESC
                 LIMIT :limit

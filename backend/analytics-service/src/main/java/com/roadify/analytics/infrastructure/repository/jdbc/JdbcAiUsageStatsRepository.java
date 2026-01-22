@@ -30,10 +30,10 @@ public class JdbcAiUsageStatsRepository implements AiUsageStatsRepository {
     @Override
     public void incrementRequestCount(LocalDate date) {
         String sql = """
-                INSERT INTO ai_usage_stats (usage_date, request_count, accepted_count)
+                INSERT INTO analytics.ai_usage_stats (usage_date, request_count, accepted_count)
                 VALUES (:usage_date, 1, 0)
                 ON CONFLICT (usage_date)
-                DO UPDATE SET request_count = ai_usage_stats.request_count + 1
+                DO UPDATE SET request_count = analytics.ai_usage_stats.request_count + 1
                 """;
 
         MapSqlParameterSource params = new MapSqlParameterSource()
@@ -45,10 +45,10 @@ public class JdbcAiUsageStatsRepository implements AiUsageStatsRepository {
     @Override
     public void incrementAcceptedCount(LocalDate date) {
         String sql = """
-                INSERT INTO ai_usage_stats (usage_date, request_count, accepted_count)
+                INSERT INTO analytics.ai_usage_stats (usage_date, request_count, accepted_count)
                 VALUES (:usage_date, 0, 1)
                 ON CONFLICT (usage_date)
-                DO UPDATE SET accepted_count = ai_usage_stats.accepted_count + 1
+                DO UPDATE SET accepted_count = analytics.ai_usage_stats.accepted_count + 1
                 """;
 
         MapSqlParameterSource params = new MapSqlParameterSource()
@@ -61,7 +61,7 @@ public class JdbcAiUsageStatsRepository implements AiUsageStatsRepository {
     public List<AiUsageStat> findBetween(LocalDate from, LocalDate to) {
         String sql = """
                 SELECT usage_date, request_count, accepted_count
-                FROM ai_usage_stats
+                FROM analytics.ai_usage_stats
                 WHERE usage_date BETWEEN :from AND :to
                 ORDER BY usage_date
                 """;
