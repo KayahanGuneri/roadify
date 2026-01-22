@@ -31,12 +31,11 @@ public class JdbcDailyRouteUsageRepository implements DailyRouteUsageRepository 
     public void incrementRouteCount(LocalDate date) {
         // PostgreSQL upsert (INSERT ... ON CONFLICT)
         String sql = """
-                INSERT INTO daily_route_usage (usage_date, route_count)
+                INSERT INTO analytics.daily_route_usage (usage_date, route_count)
                 VALUES (:usage_date, 1)
                 ON CONFLICT (usage_date)
-                DO UPDATE SET route_count = daily_route_usage.route_count + 1
+                DO UPDATE SET route_count = analytics.daily_route_usage.route_count + 1
                 """;
-
         MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue("usage_date", date);
 
@@ -47,7 +46,7 @@ public class JdbcDailyRouteUsageRepository implements DailyRouteUsageRepository 
     public List<DailyRouteUsage> findBetween(LocalDate from, LocalDate to) {
         String sql = """
                 SELECT usage_date, route_count
-                FROM daily_route_usage
+                FROM analytics.daily_route_usage
                 WHERE usage_date BETWEEN :from AND :to
                 ORDER BY usage_date
                 """;

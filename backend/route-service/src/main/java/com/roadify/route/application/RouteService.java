@@ -9,15 +9,12 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.UUID;
 
-/**
- * Application service responsible for orchestrating route preview and retrieval.
- */
 @Service
 public class RouteService {
 
     private static final Logger log = LoggerFactory.getLogger(RouteService.class);
-
     private static final Duration CACHE_TTL = Duration.ofHours(6);
 
     private final RouteRepository routeRepository;
@@ -35,10 +32,6 @@ public class RouteService {
         this.routeEventProducer = routeEventProducer;
     }
 
-    /**
-     * Preview a route between two coordinates.
-     * Tries Redis cache, but if Redis is faulty, the endpoint NEVER fires.
-     */
     public Route previewRoute(double fromLat,
                               double fromLng,
                               double toLat,
@@ -46,23 +39,36 @@ public class RouteService {
 
         String cacheKey = buildCacheKey(fromLat, fromLng, toLat, toLng);
 
-        // 1) Safe cache GET
         Route cached = safeGetFromCache(cacheKey);
         if (cached != null) {
             log.info("Returning route from Redis cache. key={}", cacheKey);
             return cached;
         }
 
-        // 2) Compute via ORS
-        Route computed = orsClient.computeRoute(fromLat, fromLng, toLat, toLng);
+        Route computed;
+        try {
+            computed = orsClient.computeRoute(fromLat, fromLng, toLat, toLng);
+        } catch (Exception ex) {
+            // ORS down/blocked vs. durumlarda analytics'i yine doldurabilmek için fallback
+            log.warn("ORS failed. Falling back to a minimal route. from=({}, {}), to=({}, {}). reason={}",
+                    fromLat, fromLng, toLat, toLng, ex.getMessage());
 
-        // 3) Persist in DB
+            computed = Route.builder()
+                    .id(UUID.randomUUID())
+                    .fromLat(fromLat)
+                    .fromLng(fromLng)
+                    .toLat(toLat)
+                    .toLng(toLng)
+                    .distanceKm(0.0)
+                    .durationMinutes(0.0)
+                    .geometry(null)
+                    .build();
+        }
+
         routeRepository.save(computed);
-
-        // 4) Safe cache PUT
         safePutToCache(cacheKey, computed);
 
-        // 5) Publish domain event to Kafka
+        // Kafka event (analytics buradan dolacak)
         routeEventProducer.sendRouteCreated(computed);
 
         return computed;
@@ -78,13 +84,9 @@ public class RouteService {
                                  double fromLng,
                                  double toLat,
                                  double toLng) {
-
         return "route:" + fromLat + ":" + fromLng + ":" + toLat + ":" + toLng;
     }
 
-    /**
-     * Redis down / timeout olursa exception'ı yutar, null döner.
-     */
     private Route safeGetFromCache(String key) {
         try {
             return routeRedisTemplate.opsForValue().get(key);
@@ -94,14 +96,9 @@ public class RouteService {
         }
     }
 
-    /**
-     * Redis down / timeout olursa sadece log yazar, devam eder.
-     */
     private void safePutToCache(String key, Route route) {
         try {
-            routeRedisTemplate
-                    .opsForValue()
-                    .set(key, route, CACHE_TTL);
+            routeRedisTemplate.opsForValue().set(key, route, CACHE_TTL);
         } catch (Exception e) {
             log.warn("Failed to put route into Redis cache, key={}. Proceeding without cache.", key, e);
         }
