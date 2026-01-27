@@ -10,41 +10,17 @@ import { PlacesListScreen } from '../screens/PlacesListScreen';
 import { TripPlannerScreen } from '../screens/TripPlannerScreen';
 import { AIScreen } from '../screens/AIScreen';
 import { AnalyticsScreen } from '../screens/AnalyticsScreen';
+import type { RootStackParamList } from './types';
 
 /**
  * RootStack.tsx
  *
  * English:
- * Root stack navigator for Roadify mobile app.
- * Defines navigation routes and typed params for each screen.
+ * App (authenticated) navigation stack.
  *
  * Türkçe Özet:
- * Uygulamanın ana navigation stack’i. Screen isimlerini ve parametre tiplerini burada tanımlarız.
+ * Login sonrası kullanılan ana navigation stack.
  */
-export type RootStackParamList = {
-    Home: undefined;
-    RouteSelection: undefined;
-
-    RoutePreview: {
-        routeId: string;
-        fromCity: string;
-        toCity: string;
-    };
-
-    RouteMapFull: {
-        routeId: string;
-    };
-
-    PlacesList: {
-        routeId: string;
-    };
-
-    TripPlanner: { tripId?: string | null } | undefined;
-
-    AIScreen: undefined;
-    AnalyticsScreen: undefined;
-};
-
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export const RootStackNavigator: React.FC = () => {
@@ -55,10 +31,7 @@ export const RootStackNavigator: React.FC = () => {
             <Stack.Screen name="RoutePreview" component={RoutePreviewScreen} />
             <Stack.Screen name="RouteMapFull" component={RouteMapFullScreen} />
             <Stack.Screen name="PlacesList" component={PlacesListScreen} />
-
-            {/* M4: Trip planner */}
             <Stack.Screen name="TripPlanner" component={TripPlannerScreen} />
-
             <Stack.Screen name="AIScreen" component={AIScreen} />
             <Stack.Screen name="AnalyticsScreen" component={AnalyticsScreen} />
         </Stack.Navigator>

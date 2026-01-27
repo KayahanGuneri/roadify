@@ -52,7 +52,8 @@ services:
 
   # -----------------------------
   # Kafka (Single broker, ZK mode)
-  # Host'tan çalışan client için advertised = localhost:9092
+  # - Host clients: localhost:9092
+  # - Containers: kafka:9092
   # -----------------------------
   kafka:
     image: bitnami/kafka:3.7
@@ -72,7 +73,6 @@ services:
       KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
       KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
       KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR: "1"
-
       KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true"
     volumes:
       - roadify_kafkadata:/bitnami/kafka
@@ -90,21 +90,33 @@ services:
       POSTGRES_DB: keycloak
       POSTGRES_USER: keycloak
       POSTGRES_PASSWORD: keycloak
+    ports:
+      # (opsiyonel) hosttan bağlanmak istersen aç
+      # - "5433:5432"
+      []
     volumes:
       - roadify_keycloak_pgdata:/var/lib/postgresql/data
     networks:
       - roadify-net
 
   # -----------------------------
-  # Keycloak (Postgres backend)
+  # Keycloak (dev)
+  # - Theme mount enabled
+  # - Theme/template cache disabled
   # -----------------------------
   keycloak:
-    image: quay.io/keycloak/keycloak:25.0
+    image: quay.io/keycloak/keycloak:25.0.6
     container_name: roadify-keycloak
     restart: unless-stopped
     depends_on:
       - keycloak-db
-    command: [ "start-dev" ]
+
+    command:
+      - start-dev
+      - --spi-theme-cache-themes=false
+      - --spi-theme-cache-templates=false
+      - --spi-theme-static-max-age=-1
+
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
@@ -114,16 +126,23 @@ services:
       KC_DB_USERNAME: keycloak
       KC_DB_PASSWORD: keycloak
 
-      # ---- issuer / hostname ayarları ----
       KC_HTTP_ENABLED: "true"
-      KC_HOSTNAME_URL: "http://localhost:8081"
-      KC_HOSTNAME_ADMIN_URL: "http://localhost:8081"
+
+      # Not: v25'te hostname v2 varsayılan. Dev için strict kapalı yeterli.
       KC_HOSTNAME_STRICT: "false"
       KC_HOSTNAME_STRICT_HTTPS: "false"
 
+      # Reverse-proxy yoksa buna gerek yok ama kalsın zararı yok.
       KC_PROXY_HEADERS: xforwarded
+
     ports:
       - "8081:8080"
+
+    volumes:
+      # Bu docker-compose dosyası infra/ altında olduğu için
+      # ./keycloak/themes -> infra/keycloak/themes
+      - ./keycloak/themes:/opt/keycloak/themes:ro
+
     networks:
       - roadify-net
 
@@ -137,4 +156,7 @@ volumes:
   roadify_zookeeperdata:
   roadify_kafkadata:
   roadify_keycloak_pgdata:
+    # Daha önce external kullanmışsın. Eğer gerçekten "docker volume ls" içinde
+    # var olan bir volume ise external true kalsın.
+    # Yoksa hata alırsan bunu kaldırıp normal volume yap:
     external: true

@@ -1,9 +1,9 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { RootStackNavigator } from './src/navigation/RootStack';
 import { AuthProvider } from './src/context/AuthContext';
 import { TripProvider } from './src/context/TripContext';
+import { RootNavigator } from './src/navigation/RootNavigator';
 
 const queryClient = new QueryClient();
 
@@ -13,7 +13,7 @@ const App: React.FC = () => {
             <AuthProvider>
                 <TripProvider>
                     <NavigationContainer>
-                        <RootStackNavigator />
+                        <RootNavigator />
                     </NavigationContainer>
                 </TripProvider>
             </AuthProvider>
