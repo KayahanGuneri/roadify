@@ -1,0 +1,188 @@
+/* ==========================================================================
+   Roadify Keycloak Theme (Login / Register)
+   - Dark premium card
+   - Fix: Android/Chrome password text (dots) not visible
+   ========================================================================== */
+
+:root{
+    --bg1:#0F1C2D;
+    --bg2:#0B1220;
+
+    --card: rgba(15,23,42,0.92);
+    --border: rgba(255,255,255,0.10);
+
+    --text:#FFFFFF;
+    --muted: rgba(255,255,255,0.72);
+
+    --primary:#34D399;
+    --primary2:#6EE7B7;
+
+    --inputBg: rgba(255,255,255,0.06);
+    --inputBorder: rgba(255,255,255,0.10);
+    --focusBorder: rgba(52,211,153,0.50);
+    --focusRing: rgba(52,211,153,0.18);
+}
+
+/* Tell browser we are dark (important for some Android form controls) */
+html { color-scheme: dark; }
+html, body { height: 100%; }
+
+body{
+    background:
+            radial-gradient(1200px 800px at 20% 10%, rgba(52,211,153,0.20), transparent 60%),
+            radial-gradient(900px 600px at 90% 40%, rgba(110,231,183,0.18), transparent 55%),
+            linear-gradient(180deg, var(--bg1), var(--bg2));
+    color: var(--text);
+}
+
+/* Center card */
+#kc-container-wrapper { padding: 48px 0; }
+#kc-content-wrapper { max-width: 420px; }
+
+.card-pf{
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    box-shadow: 0 18px 55px rgba(0,0,0,0.45);
+    padding: 22px 22px 18px 22px;
+}
+
+/* Header */
+#kc-header-wrapper{
+    text-align:left;
+    padding:0 0 14px 0;
+}
+#kc-page-title{
+    font-size:20px;
+    font-weight:800;
+    letter-spacing:0.2px;
+    color:var(--text);
+}
+
+/* ==========================================================================
+   Inputs - force background + text color for ALL states
+   (PatternFly v4/v5 + native inputs)
+   ========================================================================== */
+
+.pf-c-form-control,
+.pf-v5-c-form-control,
+input[type="text"],
+input[type="email"],
+input[type="password"]{
+    background-color: var(--inputBg) !important;
+    border: 1px solid var(--inputBorder) !important;
+    border-radius: 12px !important;
+    height: 44px !important;
+
+    color: var(--text) !important;
+    -webkit-text-fill-color: var(--text) !important;
+    caret-color: var(--text) !important;
+
+    appearance: none !important;
+    -webkit-appearance: none !important;
+}
+
+/* Focus */
+.pf-c-form-control:focus,
+.pf-v5-c-form-control:focus,
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus{
+    outline: none !important;
+
+    background-color: var(--inputBg) !important;
+    border-color: var(--focusBorder) !important;
+    box-shadow: 0 0 0 3px var(--focusRing) !important;
+
+    color: var(--text) !important;
+    -webkit-text-fill-color: var(--text) !important;
+    caret-color: var(--text) !important;
+}
+
+/* ==========================================================================
+   THE IMPORTANT PART:
+   Keycloak password field is usually inside PF input-group with an eye icon.
+   We override the real id (#password) and common wrappers with MAX specificity.
+   ========================================================================== */
+
+/* Keycloak password input id is "password" */
+#password,
+#kc-form-login #password,
+.pf-v5-c-input-group #password,
+.pf-c-input-group #password{
+    background-color: var(--inputBg) !important;
+    color: var(--text) !important;
+    -webkit-text-fill-color: var(--text) !important;
+    caret-color: var(--text) !important;
+}
+
+/* Also ensure the input-group container doesn't force white */
+.pf-v5-c-input-group,
+.pf-c-input-group{
+    background: transparent !important;
+}
+
+/* If any PF rule paints the password input white, kill it */
+.pf-v5-c-input-group .pf-v5-c-form-control,
+.pf-c-input-group .pf-c-form-control{
+    background-color: var(--inputBg) !important;
+    color: var(--text) !important;
+    -webkit-text-fill-color: var(--text) !important;
+}
+
+/* ==========================================================================
+   Chrome/Android autofill / password manager paint fixes
+   ========================================================================== */
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus{
+    -webkit-text-fill-color: var(--text) !important;
+    caret-color: var(--text) !important;
+
+    /* overrides yellow/white autofill background */
+    box-shadow: 0 0 0 1000px var(--inputBg) inset !important;
+    -webkit-box-shadow: 0 0 0 1000px var(--inputBg) inset !important;
+
+    transition: background-color 9999s ease-in-out 0s;
+}
+
+/* ==========================================================================
+   Buttons / Links / Secondary text
+   ========================================================================== */
+
+#kc-login,
+input[type="submit"]{
+    background: linear-gradient(90deg, var(--primary), var(--primary2)) !important;
+    border: none !important;
+    color: #062018 !important;
+    font-weight: 800 !important;
+    border-radius: 14px !important;
+    height: 44px !important;
+    width: 100% !important;
+    box-shadow: 0 10px 26px rgba(52,211,153,0.18);
+}
+#kc-login:hover,
+input[type="submit"]:hover{ filter: brightness(1.03); }
+
+a{
+    color: rgba(167,243,208,1) !important;
+    font-weight: 700;
+}
+a:hover{ opacity: 0.9; }
+
+#kc-form-options span,
+#kc-info-wrapper,
+.pf-c-form__helper-text{
+    color: var(--muted) !important;
+}
+
+/* Error */
+.pf-c-alert.pf-m-danger{ border-radius:14px; }
+.pf-c-alert__title{ color:#fff; }
