@@ -1,17 +1,17 @@
-// src/screens/RouteSelectionScreen.tsx
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, TextInput, StyleSheet, Image } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { Screen } from '../components/Screen';
+import { AppBar } from '../components/AppBar';
 import { PrimaryButton } from '../components/PrimaryButton';
-import { RootStackParamList } from '../navigation/RootStack';
+import type { RootStackParamList } from '../navigation/types';
 import { useRoutePreview } from '../hooks/useRoutePreview';
 import type { RoutePreviewRequestDTO, RouteDTO } from '../types/routes';
+import { getTextStyle, theme } from '../theme/theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'RouteSelection'>;
 
-// Demo city -> coordinate map (şu an için 3 şehir)
 const CITY_COORDS: Record<string, { lat: number; lng: number }> = {
     antalya: { lat: 36.8841, lng: 30.7056 },
     istanbul: { lat: 41.0082, lng: 28.9784 },
@@ -23,6 +23,8 @@ function resolveCity(name: string) {
     return CITY_COORDS[key] ?? null;
 }
 
+const hero = require('../assets/illustrations/hero.png');
+
 export const RouteSelectionScreen: React.FC<Props> = ({ navigation }) => {
     const [fromCity, setFromCity] = useState('Antalya');
     const [toCity, setToCity] = useState('Istanbul');
@@ -30,7 +32,6 @@ export const RouteSelectionScreen: React.FC<Props> = ({ navigation }) => {
 
     const { mutate, isPending, error } = useRoutePreview({
         onSuccess: (route: RouteDTO) => {
-
             navigation.navigate('RoutePreview', {
                 routeId: route.id,
                 fromCity,
@@ -39,6 +40,10 @@ export const RouteSelectionScreen: React.FC<Props> = ({ navigation }) => {
         },
     });
 
+    const combinedError = useMemo(() => {
+        return localError || (error ? error.message : null);
+    }, [localError, error]);
+
     const handlePreviewPress = () => {
         setLocalError(null);
 
@@ -46,9 +51,7 @@ export const RouteSelectionScreen: React.FC<Props> = ({ navigation }) => {
         const to = resolveCity(toCity);
 
         if (!from || !to) {
-            setLocalError(
-                'Demo şu an sadece: Antalya, Istanbul, Ankara şehirlerini destekliyor.'
-            );
+            setLocalError('Demo şu an sadece: Antalya, Istanbul, Ankara şehirlerini destekliyor.');
             return;
         }
 
@@ -62,53 +65,52 @@ export const RouteSelectionScreen: React.FC<Props> = ({ navigation }) => {
         mutate(body);
     };
 
-    const combinedError = localError || (error ? error.message : null);
-
     return (
         <Screen>
-            {/* Üstte küçük hero görseli + açıklama */}
+            <AppBar title="Select Route" onBack={() => navigation.goBack()} />
+
             <View style={styles.header}>
-                <Text style={styles.title}>Select Route</Text>
                 <Text style={styles.subtitle}>
                     Choose your origin and destination to preview your road trip.
                 </Text>
 
-                <Image
-                    source={require('../assets/illustrations/hero.png')}
-                    style={styles.hero}
-                    resizeMode="contain"
-                />
+                <Image source={hero} style={styles.hero} resizeMode="contain" />
             </View>
 
-            {/* Kart içinde form */}
             <View style={styles.card}>
+                <Text style={styles.sectionTitle}>Route details</Text>
+
                 <Text style={styles.label}>From (city)</Text>
                 <TextInput
                     style={styles.input}
                     value={fromCity}
                     onChangeText={setFromCity}
                     autoCapitalize="words"
+                    placeholder="Antalya"
+                    placeholderTextColor="rgba(255,255,255,0.35)"
                 />
 
-                <Text style={styles.label}>To (city)</Text>
+                <Text style={[styles.label, { marginTop: theme.spacing.md }]}>To (city)</Text>
                 <TextInput
                     style={styles.input}
                     value={toCity}
                     onChangeText={setToCity}
                     autoCapitalize="words"
+                    placeholder="Istanbul"
+                    placeholderTextColor="rgba(255,255,255,0.35)"
                 />
 
                 <Text style={styles.helper}>
-                    Demo cities:{' '}
-                    <Text style={styles.helperStrong}>Antalya, Istanbul, Ankara</Text>
+                    Demo cities: <Text style={styles.helperStrong}>Antalya, Istanbul, Ankara</Text>
                 </Text>
 
-                {combinedError && <Text style={styles.error}>{combinedError}</Text>}
+                {combinedError ? <Text style={styles.error}>{combinedError}</Text> : null}
 
                 <PrimaryButton
                     title={isPending ? 'Calculating…' : 'Preview Route'}
                     onPress={handlePreviewPress}
-                    style={{ marginTop: 16 }}
+                    disabled={isPending}
+                    style={{ marginTop: theme.spacing.md }}
                 />
             </View>
         </Screen>
@@ -117,52 +119,61 @@ export const RouteSelectionScreen: React.FC<Props> = ({ navigation }) => {
 
 const styles = StyleSheet.create({
     header: {
-        marginBottom: 16,
-    },
-    title: {
-        color: '#FFFFFF',
-        fontSize: 22,
-        fontWeight: '700',
+        marginTop: theme.spacing.sm,
+        marginBottom: theme.spacing.md,
     },
     subtitle: {
-        color: '#9CA3AF',
-        marginTop: 4,
+        color: theme.colors.textMuted,
+        ...getTextStyle('body'),
     },
     hero: {
-        marginTop: 16,
+        marginTop: theme.spacing.md,
         width: '100%',
         height: 140,
-        borderRadius: 24,
+        borderRadius: theme.radius['2xl'],
+        opacity: 0.95,
     },
+
     card: {
-        backgroundColor: 'rgba(15,23,42,0.96)',
-        borderRadius: 24,
-        padding: 18,
+        backgroundColor: 'rgba(2, 6, 23, 0.55)',
+        borderRadius: theme.radius['2xl'],
+        padding: theme.spacing.lg,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+    },
+    sectionTitle: {
+        color: theme.colors.text,
+        ...getTextStyle('h2'),
+        marginBottom: theme.spacing.sm,
     },
     label: {
-        color: '#E5E7EB',
-        marginTop: 8,
-        marginBottom: 4,
+        color: theme.colors.textMuted,
+        ...getTextStyle('caption'),
+        marginBottom: theme.spacing.xs,
     },
     input: {
+        height: 44,
+        borderRadius: theme.radius.md,
+        paddingHorizontal: theme.spacing.md,
+        color: theme.colors.text,
+        backgroundColor: 'rgba(255,255,255,0.06)',
         borderWidth: 1,
-        borderColor: '#1F2937',
-        backgroundColor: '#020617',
-        color: '#F9FAFB',
-        borderRadius: 10,
-        paddingHorizontal: 10,
-        paddingVertical: 8,
+        borderColor: theme.colors.border,
     },
     helper: {
-        color: '#9CA3AF',
-        marginTop: 8,
+        color: theme.colors.textMuted,
+        ...getTextStyle('caption'),
+        marginTop: theme.spacing.sm,
     },
     helperStrong: {
-        color: '#6EE7B7',
-        fontWeight: '600',
+        color: theme.colors.primary,
+        fontWeight: '700',
     },
     error: {
-        color: '#F97373',
-        marginTop: 8,
+        color: theme.colors.danger,
+        ...getTextStyle('body'),
+        marginTop: theme.spacing.sm,
     },
 });
+
+export default RouteSelectionScreen;

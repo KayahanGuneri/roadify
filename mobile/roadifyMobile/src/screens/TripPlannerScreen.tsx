@@ -1,12 +1,12 @@
-// src/screens/TripPlannerScreen.tsx
-
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import type { RootStackParamList } from '../navigation/RootStack';
+import type { RootStackParamList } from '../navigation/types';
 import { Screen } from '../components/Screen';
-import { colors, spacing } from '../theme/theme';
+import { AppBar } from '../components/AppBar';
+import { PressableScale } from '../components/PressableScale';
+import { getTextStyle, theme } from '../theme/theme';
 import { useTripContext } from '../context/TripContext';
 import { useTrip } from '../hooks/useTrip';
 import { useAuth } from '../context/AuthContext';
@@ -35,26 +35,16 @@ export const TripPlannerScreen: React.FC<Props> = ({ navigation, route }) => {
         });
     };
 
+    const onClear = () => {
+        setCurrentTripId(null);
+        navigation.goBack();
+    };
+
     return (
         <Screen>
+            <AppBar title="Trip" right={{ label: 'Clear', onPress: onClear, disabled: !tripId }} />
+
             <View style={styles.container}>
-                <View style={styles.header}>
-                    <TouchableOpacity onPress={() => navigation.goBack()}>
-                        <Text style={styles.backText}>‹ Back</Text>
-                    </TouchableOpacity>
-
-                    <Text style={styles.title}>Trip</Text>
-
-                    <TouchableOpacity
-                        onPress={() => {
-                            setCurrentTripId(null);
-                            navigation.goBack();
-                        }}
-                    >
-                        <Text style={styles.clearText}>Clear</Text>
-                    </TouchableOpacity>
-                </View>
-
                 {!accessToken ? (
                     <View style={styles.center}>
                         <Text style={styles.errorTitle}>Missing access token</Text>
@@ -69,7 +59,7 @@ export const TripPlannerScreen: React.FC<Props> = ({ navigation, route }) => {
                     </View>
                 ) : tripQuery.isLoading ? (
                     <View style={styles.center}>
-                        <ActivityIndicator size="large" color={colors.primary} />
+                        <ActivityIndicator size="large" color={theme.colors.primary} />
                         <Text style={styles.loadingText}>Loading trip…</Text>
                     </View>
                 ) : tripQuery.error ? (
@@ -95,21 +85,23 @@ export const TripPlannerScreen: React.FC<Props> = ({ navigation, route }) => {
                             contentContainerStyle={styles.listContent}
                             renderItem={({ item }) => (
                                 <View style={styles.stopRow}>
-                                    <View style={{ flex: 1 }}>
-                                        {/* NEW: prefer placeName, fallback to placeId */}
-                                        <Text style={styles.stopTitle}>Place: {item.placeName ?? item.placeId}</Text>
+                                    <View style={styles.stopLeft}>
+                                        <Text style={styles.stopTitle} numberOfLines={1}>
+                                            Place: {item.placeName ?? item.placeId}
+                                        </Text>
                                         <Text style={styles.stopSub}>Order: {item.orderIndex}</Text>
                                     </View>
 
-                                    <TouchableOpacity
+                                    <PressableScale
                                         onPress={() => onRemove(item.id)}
                                         disabled={updateStopsMutation.isPending}
-                                        style={styles.removeBtn}
+                                        contentStyle={styles.removeBtn}
                                     >
                                         <Text style={styles.removeText}>Remove</Text>
-                                    </TouchableOpacity>
+                                    </PressableScale>
                                 </View>
                             )}
+                            showsVerticalScrollIndicator={false}
                         />
                     </>
                 )}
@@ -119,26 +111,111 @@ export const TripPlannerScreen: React.FC<Props> = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, paddingHorizontal: spacing.lg, paddingTop: spacing.lg },
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.md },
-    backText: { color: colors.textPrimary, fontSize: 16 },
-    title: { color: colors.textPrimary, fontSize: 20, fontWeight: '800' },
-    clearText: { color: colors.primary, fontSize: 14, fontWeight: '800' },
-    center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.lg },
-    loadingText: { color: colors.textPrimary, marginTop: spacing.sm },
-    errorTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: '800', marginBottom: spacing.xs, textAlign: 'center' },
-    errorText: { color: '#F97373', textAlign: 'center' },
-    emptyTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: '800', textAlign: 'center', marginBottom: spacing.xs },
-    emptyText: { color: colors.textSecondary, textAlign: 'center' },
-    tripCard: { borderRadius: 16, padding: spacing.md, backgroundColor: 'rgba(2, 6, 23, 0.55)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', marginBottom: spacing.md },
-    tripTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: '900' },
-    tripMeta: { color: colors.textSecondary, marginTop: spacing.xs },
-    listContent: { paddingBottom: spacing.xl },
-    stopRow: { flexDirection: 'row', alignItems: 'center', padding: spacing.md, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)', marginBottom: spacing.md },
-    stopTitle: { color: colors.textPrimary, fontWeight: '800' },
-    stopSub: { color: colors.textSecondary, marginTop: 4, fontSize: 12 },
-    removeBtn: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: 999, backgroundColor: 'rgba(249, 115, 115, 0.15)', borderWidth: 1, borderColor: 'rgba(249, 115, 115, 0.35)' },
-    removeText: { color: '#F97373', fontWeight: '800', fontSize: 12 },
+    container: {
+        flex: 1,
+        paddingHorizontal: theme.spacing.lg,
+        paddingTop: theme.spacing.lg,
+    },
+
+    center: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: theme.spacing.lg,
+    },
+
+    loadingText: {
+        color: theme.colors.textMuted,
+        marginTop: theme.spacing.sm,
+        ...getTextStyle('body'),
+    },
+
+    errorTitle: {
+        color: theme.colors.text,
+        ...getTextStyle('h2'),
+        textAlign: 'center',
+        marginBottom: theme.spacing.xs,
+    },
+
+    errorText: {
+        color: theme.colors.danger,
+        ...getTextStyle('body'),
+        textAlign: 'center',
+    },
+
+    emptyTitle: {
+        color: theme.colors.text,
+        ...getTextStyle('h2'),
+        textAlign: 'center',
+        marginBottom: theme.spacing.xs,
+    },
+
+    emptyText: {
+        color: theme.colors.textMuted,
+        ...getTextStyle('body'),
+        textAlign: 'center',
+    },
+
+    tripCard: {
+        borderRadius: theme.radius.lg,
+        padding: theme.spacing.md,
+        backgroundColor: 'rgba(2, 6, 23, 0.55)',
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        marginBottom: theme.spacing.md,
+    },
+
+    tripTitle: {
+        color: theme.colors.text,
+        ...getTextStyle('h2'),
+    },
+
+    tripMeta: {
+        color: theme.colors.textMuted,
+        marginTop: theme.spacing.xs,
+        ...getTextStyle('caption'),
+    },
+
+    listContent: { paddingBottom: theme.spacing.xl },
+
+    stopRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: theme.spacing.md,
+        borderRadius: theme.radius.lg,
+        backgroundColor: 'rgba(255,255,255,0.06)',
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        marginBottom: theme.spacing.md,
+        gap: theme.spacing.md,
+    },
+
+    stopLeft: { flex: 1 },
+
+    stopTitle: {
+        color: theme.colors.text,
+        ...getTextStyle('bodyMedium'),
+    },
+
+    stopSub: {
+        color: theme.colors.textMuted,
+        marginTop: 4,
+        ...getTextStyle('caption'),
+    },
+
+    removeBtn: {
+        paddingHorizontal: theme.spacing.md,
+        paddingVertical: theme.spacing.xs,
+        borderRadius: theme.radius.pill,
+        backgroundColor: theme.colors.dangerSoft,
+        borderWidth: 1,
+        borderColor: 'rgba(249, 115, 115, 0.35)',
+    },
+
+    removeText: {
+        color: theme.colors.danger,
+        ...getTextStyle('overline'),
+    },
 });
 
 export default TripPlannerScreen;
