@@ -6,17 +6,18 @@ import {
     ActivityIndicator,
     FlatList,
     TextInput,
-    TouchableOpacity,
     Alert,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import type { RootStackParamList } from '../navigation/RootStack';
+import type { RootStackParamList } from '../navigation/types';
 import { Screen } from '../components/Screen';
+import { AppBar } from '../components/AppBar';
+import { PressableScale } from '../components/PressableScale';
 import { PlaceCard } from '../components/PlaceCard';
 import { usePlaces } from '../hooks/usePlaces';
 import type { PlacesFilters, PlaceDTO } from '../types/places';
-import { colors, spacing } from '../theme/theme';
+import { getTextStyle, theme } from '../theme/theme';
 
 import { useAuth } from '../context/AuthContext';
 import { useTripContext } from '../context/TripContext';
@@ -30,12 +31,8 @@ export const PlacesListScreen: React.FC<Props> = ({ navigation, route }) => {
     const { accessToken } = useAuth();
     const { currentTripId, setCurrentTripId } = useTripContext();
 
-    const { tripQuery, createTripMutation, updateStopsMutation } = useTrip(
-        accessToken,
-        currentTripId
-    );
+    const { tripQuery, createTripMutation, updateStopsMutation } = useTrip(accessToken, currentTripId);
 
-    // Filters
     const [category, setCategory] = useState<string>('');
     const [minRatingText, setMinRatingText] = useState<string>('');
     const [maxDetourKmText, setMaxDetourKmText] = useState<string>('');
@@ -57,10 +54,7 @@ export const PlacesListScreen: React.FC<Props> = ({ navigation, route }) => {
     const isMutatingTrip = createTripMutation.isPending || updateStopsMutation.isPending;
 
     const ensureTripId = async (): Promise<string> => {
-        if (!accessToken) {
-            throw new Error('Missing access token');
-        }
-
+        if (!accessToken) throw new Error('Missing access token');
         if (currentTripId) return currentTripId;
 
         const created = await createTripMutation.mutateAsync({
@@ -75,15 +69,11 @@ export const PlacesListScreen: React.FC<Props> = ({ navigation, route }) => {
     const onAddToTrip = async (place: PlaceDTO) => {
         try {
             if (!accessToken) {
-                Alert.alert('Login required', 'Please login (dev) from HomeScreen to add places to a trip.');
+                Alert.alert('Login required', 'Please login to add places to a trip.');
                 return;
             }
 
             const tripId = await ensureTripId();
-
-            // Safer stop count:
-            // - If tripQuery isn't loaded yet, default to 0.
-            // - If loaded, use current stops length.
             const existingStopsCount = tripQuery.data?.stops?.length ?? 0;
 
             await updateStopsMutation.mutateAsync({
@@ -92,7 +82,7 @@ export const PlacesListScreen: React.FC<Props> = ({ navigation, route }) => {
                     add: [
                         {
                             placeId: place.id,
-                            placeName: place.name ?? null, // NEW
+                            placeName: place.name ?? null,
                             orderIndex: existingStopsCount,
                             plannedArrivalTime: null,
                             plannedDurationMinutes: null,
@@ -104,8 +94,7 @@ export const PlacesListScreen: React.FC<Props> = ({ navigation, route }) => {
 
             Alert.alert('Added', 'Place added to your trip.');
         } catch (e: any) {
-            const msg = e?.message || 'Unknown error';
-            Alert.alert('Add to trip failed', msg);
+            Alert.alert('Add to trip failed', e?.message ?? 'Unknown error');
         }
     };
 
@@ -113,59 +102,34 @@ export const PlacesListScreen: React.FC<Props> = ({ navigation, route }) => {
         navigation.navigate('TripPlanner', { tripId: currentTripId });
     };
 
+    const clearTrip = () => setCurrentTripId(null);
+
     return (
         <Screen>
+            <AppBar
+                title="Places"
+                right={{
+                    label: 'Trip',
+                    onPress: goToTripPlanner,
+                    disabled: !currentTripId,
+                }}
+            />
+
             <View style={styles.container}>
-                {/* Header */}
-                <View style={styles.header}>
-                    <TouchableOpacity
-                        onPress={() => navigation.goBack()}
-                        accessibilityRole="button"
-                        accessibilityLabel="Go back"
-                    >
-                        <Text style={styles.backText}>‹ Back</Text>
-                    </TouchableOpacity>
-
-                    <Text style={styles.title}>Places</Text>
-
-                    {/* Quick access to TripPlanner if trip exists */}
-                    <TouchableOpacity
-                        onPress={goToTripPlanner}
-                        disabled={!currentTripId}
-                        style={[styles.tripBtn, !currentTripId && styles.tripBtnDisabled]}
-                    >
-                        <Text style={[styles.tripBtnText, !currentTripId && styles.tripBtnTextDisabled]}>
-                            Trip
-                        </Text>
-                    </TouchableOpacity>
-                </View>
-
-                {/* Trip status line */}
                 <View style={styles.tripStatusBar}>
                     <Text style={styles.tripStatusText}>
                         Trip: {currentTripId ? 'ACTIVE' : 'none'} {isMutatingTrip ? '(saving...)' : ''}
                     </Text>
 
-                    <TouchableOpacity
-                        onPress={() => setCurrentTripId(null)}
+                    <PressableScale
+                        onPress={clearTrip}
                         disabled={!currentTripId || isMutatingTrip}
-                        style={[
-                            styles.clearTripBtn,
-                            (!currentTripId || isMutatingTrip) && styles.clearTripBtnDisabled,
-                        ]}
+                        contentStyle={styles.clearTripBtn}
                     >
-                        <Text
-                            style={[
-                                styles.clearTripText,
-                                (!currentTripId || isMutatingTrip) && styles.clearTripTextDisabled,
-                            ]}
-                        >
-                            Clear
-                        </Text>
-                    </TouchableOpacity>
+                        <Text style={styles.clearTripText}>Clear</Text>
+                    </PressableScale>
                 </View>
 
-                {/* Filters */}
                 <View style={styles.filtersCard}>
                     <Text style={styles.sectionTitle}>Filters</Text>
 
@@ -212,16 +176,15 @@ export const PlacesListScreen: React.FC<Props> = ({ navigation, route }) => {
                             <Text style={styles.statusText}>{places.length} result(s)</Text>
                         )}
 
-                        <TouchableOpacity onPress={() => refetch()} style={styles.refreshBtn}>
+                        <PressableScale onPress={() => refetch()} contentStyle={styles.refreshBtn}>
                             <Text style={styles.refreshText}>Refresh</Text>
-                        </TouchableOpacity>
+                        </PressableScale>
                     </View>
                 </View>
 
-                {/* Content */}
                 {isLoading ? (
                     <View style={styles.center}>
-                        <ActivityIndicator size="large" color={colors.primary} />
+                        <ActivityIndicator size="large" color={theme.colors.primary} />
                         <Text style={styles.loadingText}>Loading places…</Text>
                     </View>
                 ) : error ? (
@@ -229,9 +192,9 @@ export const PlacesListScreen: React.FC<Props> = ({ navigation, route }) => {
                         <Text style={styles.errorTitle}>Could not load places</Text>
                         <Text style={styles.errorText}>Please try again. (routeId: {routeId})</Text>
 
-                        <TouchableOpacity onPress={() => refetch()} style={styles.retryBtn}>
+                        <PressableScale onPress={() => refetch()} contentStyle={styles.retryBtn}>
                             <Text style={styles.retryText}>Retry</Text>
-                        </TouchableOpacity>
+                        </PressableScale>
                     </View>
                 ) : places.length === 0 ? (
                     <View style={styles.center}>
@@ -243,12 +206,7 @@ export const PlacesListScreen: React.FC<Props> = ({ navigation, route }) => {
                         data={places}
                         keyExtractor={(item) => item.id}
                         contentContainerStyle={styles.listContent}
-                        renderItem={({ item }) => (
-                            <PlaceCard
-                                place={item}
-                                onAddToTrip={(p) => onAddToTrip(p)}
-                            />
-                        )}
+                        renderItem={({ item }) => <PlaceCard place={item} onAddToTrip={onAddToTrip} />}
                         showsVerticalScrollIndicator={false}
                     />
                 )}
@@ -260,181 +218,157 @@ export const PlacesListScreen: React.FC<Props> = ({ navigation, route }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        paddingHorizontal: spacing.lg,
-        paddingTop: spacing.lg,
+        paddingHorizontal: theme.spacing.lg,
+        paddingTop: theme.spacing.lg,
     },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: spacing.md,
-    },
-    backText: {
-        color: colors.textPrimary,
-        fontSize: 16,
-    },
-    title: {
-        color: colors.textPrimary,
-        fontSize: 20,
-        fontWeight: '800',
-    },
-    tripBtn: {
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.xs,
-        borderRadius: 999,
-        backgroundColor: 'rgba(52, 211, 153, 0.15)',
-        borderWidth: 1,
-        borderColor: 'rgba(52, 211, 153, 0.35)',
-    },
-    tripBtnDisabled: {
-        backgroundColor: 'rgba(148, 163, 184, 0.10)',
-        borderColor: 'rgba(148, 163, 184, 0.20)',
-    },
-    tripBtnText: {
-        color: colors.primary,
-        fontSize: 12,
-        fontWeight: '800',
-    },
-    tripBtnTextDisabled: {
-        color: 'rgba(148, 163, 184, 0.7)',
-    },
+
     tripStatusBar: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: spacing.md,
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.sm,
-        borderRadius: 14,
+        marginBottom: theme.spacing.md,
+        paddingHorizontal: theme.spacing.md,
+        paddingVertical: theme.spacing.sm,
+        borderRadius: theme.radius.md,
         backgroundColor: 'rgba(2, 6, 23, 0.35)',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)',
+        borderColor: theme.colors.border,
     },
+
     tripStatusText: {
-        color: colors.textSecondary,
-        fontSize: 12,
+        color: theme.colors.textMuted,
+        ...getTextStyle('caption'),
     },
+
     clearTripBtn: {
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.xs,
-        borderRadius: 999,
-        backgroundColor: 'rgba(249, 115, 115, 0.15)',
+        paddingHorizontal: theme.spacing.md,
+        paddingVertical: theme.spacing.xs,
+        borderRadius: theme.radius.pill,
+        backgroundColor: theme.colors.dangerSoft,
         borderWidth: 1,
         borderColor: 'rgba(249, 115, 115, 0.35)',
     },
-    clearTripBtnDisabled: {
-        backgroundColor: 'rgba(148, 163, 184, 0.10)',
-        borderColor: 'rgba(148, 163, 184, 0.20)',
-    },
+
     clearTripText: {
-        color: '#F97373',
-        fontSize: 12,
-        fontWeight: '800',
+        color: theme.colors.danger,
+        ...getTextStyle('overline'),
     },
-    clearTripTextDisabled: {
-        color: 'rgba(148, 163, 184, 0.7)',
-    },
+
     filtersCard: {
-        borderRadius: 16,
-        padding: spacing.md,
+        borderRadius: theme.radius.lg,
+        padding: theme.spacing.md,
         backgroundColor: 'rgba(2, 6, 23, 0.55)',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)',
-        marginBottom: spacing.md,
+        borderColor: theme.colors.border,
+        marginBottom: theme.spacing.md,
     },
+
     sectionTitle: {
-        color: colors.textPrimary,
-        fontSize: 14,
-        fontWeight: '800',
-        marginBottom: spacing.sm,
+        color: theme.colors.text,
+        ...getTextStyle('h2'),
+        marginBottom: theme.spacing.sm,
     },
-    filterRow: {
-        marginTop: spacing.sm,
-    },
+
+    filterRow: { marginTop: theme.spacing.sm },
+
     label: {
-        color: colors.textSecondary,
-        fontSize: 12,
-        marginBottom: spacing.xs,
+        color: theme.colors.textMuted,
+        ...getTextStyle('caption'),
+        marginBottom: theme.spacing.xs,
     },
+
     input: {
         height: 42,
-        borderRadius: 12,
-        paddingHorizontal: spacing.md,
-        color: colors.textPrimary,
+        borderRadius: theme.radius.md,
+        paddingHorizontal: theme.spacing.md,
+        color: theme.colors.text,
         backgroundColor: 'rgba(255,255,255,0.06)',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.10)',
+        borderColor: theme.colors.border,
     },
+
     statusRow: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginTop: spacing.md,
+        marginTop: theme.spacing.md,
     },
+
     statusText: {
-        color: colors.textSecondary,
-        fontSize: 12,
+        color: theme.colors.textMuted,
+        ...getTextStyle('caption'),
     },
+
     refreshBtn: {
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.xs,
-        borderRadius: 999,
-        backgroundColor: 'rgba(52, 211, 153, 0.15)',
+        paddingHorizontal: theme.spacing.md,
+        paddingVertical: theme.spacing.xs,
+        borderRadius: theme.radius.pill,
+        backgroundColor: theme.colors.primarySoft,
         borderWidth: 1,
         borderColor: 'rgba(52, 211, 153, 0.35)',
     },
+
     refreshText: {
-        color: colors.primary,
-        fontSize: 12,
-        fontWeight: '800',
+        color: theme.colors.primary,
+        ...getTextStyle('overline'),
     },
+
     center: {
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        paddingHorizontal: spacing.lg,
+        paddingHorizontal: theme.spacing.lg,
     },
+
     loadingText: {
-        color: colors.textPrimary,
-        marginTop: spacing.sm,
+        color: theme.colors.textMuted,
+        marginTop: theme.spacing.sm,
+        ...getTextStyle('body'),
     },
+
     errorTitle: {
-        color: colors.textPrimary,
-        fontSize: 16,
-        fontWeight: '800',
-        marginBottom: spacing.xs,
+        color: theme.colors.text,
+        ...getTextStyle('h2'),
         textAlign: 'center',
+        marginBottom: theme.spacing.xs,
     },
+
     errorText: {
-        color: '#F97373',
+        color: theme.colors.danger,
+        ...getTextStyle('body'),
         textAlign: 'center',
     },
+
     retryBtn: {
-        marginTop: spacing.md,
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.sm,
-        borderRadius: 999,
-        backgroundColor: 'rgba(249, 115, 115, 0.15)',
+        marginTop: theme.spacing.md,
+        paddingHorizontal: theme.spacing.lg,
+        paddingVertical: theme.spacing.sm,
+        borderRadius: theme.radius.pill,
+        backgroundColor: theme.colors.dangerSoft,
         borderWidth: 1,
         borderColor: 'rgba(249, 115, 115, 0.35)',
     },
+
     retryText: {
-        color: '#F97373',
-        fontWeight: '800',
+        color: theme.colors.danger,
+        ...getTextStyle('bodyMedium'),
     },
+
     emptyTitle: {
-        color: colors.textPrimary,
-        fontSize: 16,
-        fontWeight: '800',
+        color: theme.colors.text,
+        ...getTextStyle('h2'),
         textAlign: 'center',
-        marginBottom: spacing.xs,
+        marginBottom: theme.spacing.xs,
     },
+
     emptyText: {
-        color: colors.textSecondary,
+        color: theme.colors.textMuted,
+        ...getTextStyle('body'),
         textAlign: 'center',
     },
+
     listContent: {
-        paddingBottom: spacing.xl,
+        paddingBottom: theme.spacing.xl,
     },
 });
 

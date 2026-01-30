@@ -1,32 +1,24 @@
-// src/screens/HomeScreen.tsx
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { Screen } from '../components/Screen';
+import { AppBar } from '../components/AppBar';
 import { PrimaryButton } from '../components/PrimaryButton';
 import type { RootStackParamList } from '../navigation/types';
 import { useAuth } from '../context/AuthContext';
+import { theme } from '../theme/theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
-/**
- * HomeScreen
- *
- * English:
- * Entry / dashboard screen. No embedded auth form.
- *
- * Türkçe Özet:
- * Home artık login formu içermez.
- * Guest ise Login/Register CTA gösterir.
- * Auth ise ana aksiyonları gösterir.
- */
 export const HomeScreen: React.FC<Props> = ({ navigation }) => {
     const { isLoggedIn, logout } = useAuth();
     const authed = useMemo(() => Boolean(isLoggedIn), [isLoggedIn]);
 
     return (
         <Screen>
+            <AppBar title="Roadify" />
+
             <View style={styles.header}>
                 <View style={styles.logoRow}>
                     <Image source={require('../assets/logos/app-icon.png')} style={styles.logo} />
@@ -78,9 +70,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
                 ) : (
                     <>
                         <Text style={styles.cardTitle}>Dashboard</Text>
-                        <Text style={styles.cardSubtitle}>
-                            Continue planning your next trip.
-                        </Text>
+                        <Text style={styles.cardSubtitle}>Continue planning your next trip.</Text>
 
                         <PrimaryButton
                             title="Plan Trip"
@@ -105,11 +95,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
                         <View style={styles.divider} />
 
-                        <PrimaryButton
-                            title="Logout"
-                            onPress={() => void logout()}
-                            style={{ marginTop: 0 }}
-                        />
+                        <PrimaryButton title="Logout" onPress={() => void logout()} />
                     </>
                 )}
             </View>
@@ -118,7 +104,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    header: { marginBottom: 16 },
+    header: { marginBottom: 16, marginTop: theme.spacing.md },
     logoRow: { flexDirection: 'row', alignItems: 'center' },
     logo: { width: 40, height: 40, borderRadius: 12, marginRight: 10 },
     appName: { color: '#FFFFFF', fontSize: 22, fontWeight: '800' },

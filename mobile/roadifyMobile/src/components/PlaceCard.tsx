@@ -1,22 +1,14 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import type { PlaceDTO } from '../types/places';
-import { colors, spacing } from '../theme/theme';
+import { theme, getTextStyle } from '../theme/theme';
+import { PressableScale } from './PressableScale';
 
 type Props = {
     place: PlaceDTO;
     onAddToTrip?: (place: PlaceDTO) => void;
 };
 
-/**
- * PlaceCard
- *
- * English:
- * Small reusable card for displaying a single place.
- *
- * Türkçe Özet:
- * Tek bir mekanı liste içinde göstermek için tekrar kullanılabilir kart.
- */
 export const PlaceCard: React.FC<Props> = ({ place, onAddToTrip }) => {
     const ratingText = place.rating === null ? '—' : place.rating.toFixed(1);
 
@@ -38,14 +30,13 @@ export const PlaceCard: React.FC<Props> = ({ place, onAddToTrip }) => {
             </View>
 
             {onAddToTrip ? (
-                <TouchableOpacity
+                <PressableScale
                     onPress={() => onAddToTrip(place)}
-                    accessibilityRole="button"
-                    accessibilityLabel="Add place to trip"
-                    style={styles.addBtn}
+                    contentStyle={styles.addBtn}
+                    hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                 >
                     <Text style={styles.addBtnText}>Add to trip</Text>
-                </TouchableOpacity>
+                </PressableScale>
             ) : null}
         </View>
     );
@@ -53,59 +44,56 @@ export const PlaceCard: React.FC<Props> = ({ place, onAddToTrip }) => {
 
 const styles = StyleSheet.create({
     card: {
-        backgroundColor: colors.background,
-        borderRadius: 16,
-        padding: spacing.md,
+        backgroundColor: 'rgba(2, 6, 23, 0.55)',
+        borderRadius: theme.radius.lg,
+        padding: theme.spacing.md,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)',
-        marginBottom: spacing.sm,
+        borderColor: theme.colors.border,
+        marginBottom: theme.spacing.sm,
     },
     headerRow: {
         flexDirection: 'row',
         alignItems: 'flex-start',
         justifyContent: 'space-between',
-        gap: spacing.sm,
+        gap: theme.spacing.sm,
     },
     name: {
         flex: 1,
-        color: colors.textPrimary,
-        fontSize: 16,
-        fontWeight: '700',
+        color: theme.colors.text,
+        ...getTextStyle('bodyMedium'),
     },
     badge: {
-        paddingHorizontal: spacing.sm,
-        paddingVertical: spacing.xs,
-        borderRadius: 999,
-        backgroundColor: 'rgba(52, 211, 153, 0.15)',
+        paddingHorizontal: theme.spacing.sm,
+        paddingVertical: theme.spacing.xs,
+        borderRadius: theme.radius.pill,
+        backgroundColor: theme.colors.primarySoft,
         borderWidth: 1,
         borderColor: 'rgba(52, 211, 153, 0.35)',
     },
     badgeText: {
-        color: colors.primary,
-        fontSize: 11,
-        fontWeight: '700',
+        color: theme.colors.primary,
+        ...getTextStyle('overline'),
     },
     metaRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginTop: spacing.sm,
+        marginTop: theme.spacing.sm,
     },
     metaText: {
-        color: colors.textSecondary,
-        fontSize: 12,
+        color: theme.colors.textMuted,
+        ...getTextStyle('caption'),
     },
     addBtn: {
-        marginTop: spacing.md,
-        paddingVertical: spacing.sm,
-        borderRadius: 12,
+        marginTop: theme.spacing.md,
+        paddingVertical: theme.spacing.sm,
+        borderRadius: theme.radius.md,
         alignItems: 'center',
-        backgroundColor: 'rgba(52, 211, 153, 0.15)',
+        backgroundColor: theme.colors.primarySoft,
         borderWidth: 1,
         borderColor: 'rgba(52, 211, 153, 0.35)',
     },
     addBtnText: {
-        color: colors.primary,
-        fontWeight: '800',
-        fontSize: 12,
+        color: theme.colors.primary,
+        ...getTextStyle('bodyMedium'),
     },
 });

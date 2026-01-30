@@ -1,8 +1,11 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, Image, ActivityIndicator, ScrollView } from 'react-native';
+
 import { Screen } from '../components/Screen';
+import { AppBar } from '../components/AppBar';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { useAnalytics } from '../hooks/useAnalytics';
+import { getElevation, getTextStyle, theme } from '../theme/theme';
 
 const hero = require('../assets/illustrations/hero.png');
 
@@ -22,7 +25,6 @@ export const AnalyticsScreen: React.FC<any> = ({ navigation }) => {
 
     const lastAiUsage = useMemo(() => {
         if (!aiUsage || aiUsage.length === 0) return null;
-        // Eğer backend sıralı değilse, burada date ile max seçebilirsin.
         return aiUsage[aiUsage.length - 1];
     }, [aiUsage]);
 
@@ -32,23 +34,21 @@ export const AnalyticsScreen: React.FC<any> = ({ navigation }) => {
 
     return (
         <Screen>
-            <ScrollView contentContainerStyle={styles.container}>
-                <View style={styles.card}>
-                    <Text style={styles.title}>Analytics</Text>
+            <AppBar title="Analytics" />
 
+            <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+                <View style={styles.card}>
                     {isLoading ? (
                         <View style={styles.stateBox}>
-                            <ActivityIndicator />
+                            <ActivityIndicator color={theme.colors.primary} />
                             <Text style={styles.stateText}>Loading analytics...</Text>
                         </View>
                     ) : isError ? (
                         <View style={styles.stateBox}>
                             <Text style={styles.stateText}>We couldn't load analytics right now.</Text>
-                            <Text style={styles.stateSubText}>
-                                {error ? String(error) : 'Please try again.'}
-                            </Text>
+                            <Text style={styles.stateSubText}>{error ? String(error) : 'Please try again.'}</Text>
 
-                            <PrimaryButton title="Retry" onPress={refetchAll} style={{ marginTop: 12 }} />
+                            <PrimaryButton title="Retry" onPress={refetchAll} style={{ marginTop: theme.spacing.sm }} />
                         </View>
                     ) : (
                         <>
@@ -75,7 +75,7 @@ export const AnalyticsScreen: React.FC<any> = ({ navigation }) => {
                                 </View>
                             </View>
 
-                            <View style={{ marginTop: 16, gap: 10 }}>
+                            <View style={styles.insights}>
                                 <View style={styles.insightBox}>
                                     <Text style={styles.insightTitle}>Popular category</Text>
                                     <Text style={styles.insightValue}>
@@ -89,7 +89,11 @@ export const AnalyticsScreen: React.FC<any> = ({ navigation }) => {
                                     <Text style={styles.insightTitle}>AI usage (latest day)</Text>
                                     <Text style={styles.insightValue}>
                                         {lastAiUsage
-                                            ? `Date: ${lastAiUsage.date} · Requested: ${formatNumber(lastAiUsage.requestCount)} · Accepted: ${formatNumber(lastAiUsage.acceptedCount)} · Rate: ${lastAiUsage.acceptanceRate}`
+                                            ? `Date: ${lastAiUsage.date} · Requested: ${formatNumber(
+                                                lastAiUsage.requestCount
+                                            )} · Accepted: ${formatNumber(
+                                                lastAiUsage.acceptedCount
+                                            )} · Rate: ${lastAiUsage.acceptanceRate}`
                                             : 'No data yet'}
                                     </Text>
                                 </View>
@@ -98,7 +102,7 @@ export const AnalyticsScreen: React.FC<any> = ({ navigation }) => {
                             <PrimaryButton
                                 title="Back to Home"
                                 onPress={() => navigation.navigate('Home')}
-                                style={{ marginTop: 16 }}
+                                style={{ marginTop: theme.spacing.md }}
                             />
                         </>
                     )}
@@ -109,69 +113,108 @@ export const AnalyticsScreen: React.FC<any> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    container: { padding: 16 },
+    container: {
+        padding: theme.spacing.lg,
+    },
+
     card: {
         flex: 1,
         backgroundColor: 'rgba(15,23,42,0.96)',
-        borderRadius: 24,
-        padding: 20,
+        borderRadius: theme.radius['2xl'],
+        padding: theme.spacing.lg,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        ...getElevation('e2'),
     },
-    title: {
-        color: '#FFFFFF',
-        fontSize: 22,
-        fontWeight: '700',
-        marginBottom: 4,
-    },
+
     subtitle: {
-        color: '#9CA3AF',
-        fontSize: 14,
-        marginBottom: 16,
+        color: theme.colors.textMuted,
+        ...getTextStyle('body'),
+        marginBottom: theme.spacing.md,
     },
+
     image: {
         width: '100%',
         height: 170,
-        borderRadius: 20,
-        marginBottom: 16,
+        borderRadius: theme.radius.xl,
+        marginBottom: theme.spacing.md,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
     },
+
     row: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        gap: 8,
+        gap: theme.spacing.sm,
     },
+
     statBox: {
         flex: 1,
-        backgroundColor: '#020617',
-        borderRadius: 16,
-        paddingVertical: 12,
-        paddingHorizontal: 10,
+        backgroundColor: 'rgba(2, 6, 23, 0.55)',
+        borderRadius: theme.radius.lg,
+        paddingVertical: theme.spacing.sm,
+        paddingHorizontal: theme.spacing.sm,
         alignItems: 'center',
+        borderWidth: 1,
+        borderColor: theme.colors.border,
     },
-    statLabel: { color: '#9CA3AF', fontSize: 12 },
+
+    statLabel: {
+        color: theme.colors.textMuted,
+        ...getTextStyle('caption'),
+    },
+
     statValue: {
-        color: '#FFFFFF',
-        fontSize: 18,
-        fontWeight: '700',
-        marginTop: 4,
+        color: theme.colors.text,
+        ...getTextStyle('h2'),
+        marginTop: theme.spacing.xs,
     },
+
     stateBox: {
-        marginTop: 16,
-        backgroundColor: '#020617',
-        borderRadius: 16,
-        padding: 16,
-        gap: 8,
+        marginTop: theme.spacing.md,
+        backgroundColor: 'rgba(2, 6, 23, 0.55)',
+        borderRadius: theme.radius.lg,
+        padding: theme.spacing.md,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        gap: theme.spacing.sm,
+        ...getElevation('e1'),
     },
-    stateText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
-    stateSubText: { color: '#9CA3AF', fontSize: 12 },
+
+    stateText: {
+        color: theme.colors.text,
+        ...getTextStyle('bodyMedium'),
+    },
+
+    stateSubText: {
+        color: theme.colors.textMuted,
+        ...getTextStyle('caption'),
+    },
+
+    insights: {
+        marginTop: theme.spacing.md,
+        gap: theme.spacing.sm,
+    },
+
     insightBox: {
-        backgroundColor: '#020617',
-        borderRadius: 16,
-        padding: 14,
+        backgroundColor: 'rgba(2, 6, 23, 0.55)',
+        borderRadius: theme.radius.lg,
+        padding: theme.spacing.md,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        ...getElevation('e1'),
     },
-    insightTitle: { color: '#9CA3AF', fontSize: 12 },
+
+    insightTitle: {
+        color: theme.colors.textMuted,
+        ...getTextStyle('caption'),
+    },
+
     insightValue: {
-        color: '#FFFFFF',
-        fontSize: 14,
-        fontWeight: '600',
-        marginTop: 6,
+        color: theme.colors.text,
+        ...getTextStyle('bodyMedium'),
+        marginTop: theme.spacing.sm,
     },
 });
+
+export default AnalyticsScreen;

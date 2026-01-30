@@ -1,41 +1,35 @@
-// src/components/Screen.tsx
 import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, StatusBar } from 'react-native';
+import { Animated, StyleSheet, StatusBar, StyleProp, ViewStyle } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import { theme } from '../theme/theme';
 
 type Props = {
     children: React.ReactNode;
+    style?: StyleProp<ViewStyle>;        // outer container
+    contentStyle?: StyleProp<ViewStyle>; // inner content wrapper
+    noPadding?: boolean;
 };
 
-export const Screen: React.FC<Props> = ({ children }) => {
+export const Screen: React.FC<Props> = ({ children, style, contentStyle, noPadding }) => {
     const opacity = useRef(new Animated.Value(0)).current;
-    const translateY = useRef(new Animated.Value(20)).current;
+    const translateY = useRef(new Animated.Value(14)).current;
 
     useEffect(() => {
         Animated.parallel([
-            Animated.timing(opacity, {
-                toValue: 1,
-                duration: 400,
-                useNativeDriver: true,
-            }),
-            Animated.timing(translateY, {
-                toValue: 0,
-                duration: 400,
-                useNativeDriver: true,
-            }),
+            Animated.timing(opacity, { toValue: 1, duration: 380, useNativeDriver: true }),
+            Animated.timing(translateY, { toValue: 0, duration: 380, useNativeDriver: true }),
         ]).start();
     }, [opacity, translateY]);
 
     return (
-        <LinearGradient
-            colors={['#0F1C2D', '#34D399']}
-            style={styles.gradient}
-        >
+        <LinearGradient colors={[theme.colors.bg, theme.colors.surface]} style={[styles.gradient, style]}>
             <StatusBar barStyle="light-content" />
             <Animated.View
                 style={[
                     styles.content,
+                    noPadding ? styles.noPadding : styles.padded,
                     { opacity, transform: [{ translateY }] },
+                    contentStyle,
                 ]}
             >
                 {children}
@@ -45,13 +39,16 @@ export const Screen: React.FC<Props> = ({ children }) => {
 };
 
 const styles = StyleSheet.create({
-    gradient: {
-        flex: 1,
+    gradient: { flex: 1 },
+    content: { flex: 1 },
+    padded: {
+        paddingHorizontal: theme.spacing.lg,
+        paddingTop: theme.spacing.lg,
+        paddingBottom: theme.spacing.md,
     },
-    content: {
-        flex: 1,
-        paddingHorizontal: 20,
-        paddingTop: 24,
-        paddingBottom: 16,
+    noPadding: {
+        paddingHorizontal: 0,
+        paddingTop: 0,
+        paddingBottom: 0,
     },
 });
