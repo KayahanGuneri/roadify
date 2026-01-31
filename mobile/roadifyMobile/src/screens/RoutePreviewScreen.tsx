@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
@@ -8,32 +8,49 @@ import { PrimaryButton } from '../components/PrimaryButton';
 import type { RootStackParamList } from '../navigation/types';
 import { useRouteById } from '../hooks/useRouteById';
 import { RouteMap } from '../components/RouteMap';
+import { RouteMapPlaceholder } from '../components/RouteMapPlaceholder';
 import { getElevation, getTextStyle, theme } from '../theme/theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'RoutePreview'>;
+type MapStatus = 'unknown' | 'ready' | 'fallback';
 
 export const RoutePreviewScreen: React.FC<Props> = ({ navigation, route }) => {
-    const { routeId, fromCity, toCity } = route.params;
-    const { data, isLoading, error } = useRouteById(routeId);
+    // Params (safe)
+    const routeId = route.params?.routeId ?? '';
+    const fromCity = route.params?.fromCity ?? '';
+    const toCity = route.params?.toCity ?? '';
 
-    if (isLoading) {
+    // Hooks (always same order)
+    const { data, isLoading, error, refetch, isFetching } = useRouteById(routeId);
+    const [mapStatus, setMapStatus] = useState<MapStatus>('unknown');
+
+    useEffect(() => {
+        // Reset when route changes
+        setMapStatus('unknown');
+
+        // If map isn't ready quickly, show fallback placeholder
+        const t = setTimeout(() => {
+            setMapStatus((s) => (s === 'ready' ? 'ready' : 'fallback'));
+        }, 900);
+
+        return () => clearTimeout(t);
+    }, [routeId]);
+
+    const onMapReady = () => setMapStatus('ready');
+
+    const distanceKm = useMemo(() => data?.distanceKm ?? 0, [data]);
+    const durationMinutes = useMemo(() => data?.durationMinutes ?? 0, [data]);
+    const hours = Math.floor(durationMinutes / 60);
+    const minutes = Math.round(durationMinutes % 60);
+
+    // Missing routeId (after hooks)
+    if (!routeId) {
         return (
             <Screen>
-                <View style={styles.center}>
-                    <ActivityIndicator size="large" color={theme.colors.primary} />
-                    <Text style={styles.loadingText}>Loading route…</Text>
-                </View>
-            </Screen>
-        );
-    }
-
-    if (error || !data) {
-        return (
-            <Screen>
+                <AppBar title="Route Preview" onBack={() => navigation.navigate('Home')} />
                 <View style={styles.center}>
                     <Text style={styles.title}>Route Preview</Text>
-                    <Text style={styles.errorText}>Could not load route details. Please try again.</Text>
-
+                    <Text style={styles.errorText}>Missing route id. Please select a route again.</Text>
                     <PrimaryButton
                         title="Back to Home"
                         onPress={() => navigation.navigate('Home')}
@@ -44,15 +61,74 @@ export const RoutePreviewScreen: React.FC<Props> = ({ navigation, route }) => {
         );
     }
 
-    const distanceKm = data.distanceKm;
-    const durationMinutes = data.durationMinutes;
-    const hours = Math.floor(durationMinutes / 60);
-    const minutes = Math.round(durationMinutes % 60);
+    // Loading
+    if (isLoading) {
+        return (
+            <Screen style={styles.screenNoPadding}>
+                <View style={styles.container}>
+                    {/* ✅ No header in placeholder (AppBar already exists) */}
+                    <RouteMapPlaceholder fromCity={fromCity} toCity={toCity} showHeader={false} />
+                    <AppBar title="Route Preview" variant="overlay" />
+
+                    <View style={[styles.bottomPanel, getElevation('e3')]}>
+                        <View style={styles.centerInline}>
+                            <ActivityIndicator size="small" color={theme.colors.primary} />
+                            <Text style={styles.loadingText}>Loading route…</Text>
+                        </View>
+                    </View>
+                </View>
+            </Screen>
+        );
+    }
+
+    // Error / No data
+    if (error || !data) {
+        return (
+            <Screen style={styles.screenNoPadding}>
+                <View style={styles.container}>
+                    <RouteMapPlaceholder fromCity={fromCity} toCity={toCity} showHeader={false} />
+                    <AppBar title="Route Preview" variant="overlay" />
+
+                    <View style={[styles.bottomPanel, getElevation('e3')]}>
+                        <Text style={styles.errorTitle}>Could not load route</Text>
+                        <Text style={styles.errorText}>Please try again.</Text>
+
+                        <PrimaryButton
+                            title={isFetching ? 'Retrying…' : 'Retry'}
+                            onPress={() => refetch()}
+                            disabled={isFetching}
+                            style={{ marginTop: theme.spacing.md }}
+                        />
+
+                        <PrimaryButton
+                            title="Back to Home"
+                            onPress={() => navigation.navigate('Home')}
+                            style={{ marginTop: theme.spacing.sm }}
+                        />
+                    </View>
+                </View>
+            </Screen>
+        );
+    }
 
     return (
         <Screen style={styles.screenNoPadding}>
             <View style={styles.container}>
-                <RouteMap route={data} />
+                {/* ✅ Key fix: Try map first. Only show full fallback after timeout. */}
+                {mapStatus === 'fallback' ? (
+                    <RouteMapPlaceholder fromCity={fromCity} toCity={toCity} showHeader={false} />
+                ) : (
+                    <View style={{ flex: 1 }}>
+                        <RouteMap route={data} onReady={onMapReady} />
+
+                        {/* While unknown, overlay a lightweight placeholder */}
+                        {mapStatus === 'unknown' ? (
+                            <View style={StyleSheet.absoluteFill} pointerEvents="none">
+                                <RouteMapPlaceholder fromCity={fromCity} toCity={toCity} showHeader={false} />
+                            </View>
+                        ) : null}
+                    </View>
+                )}
 
                 <AppBar title="Route Preview" variant="overlay" />
 
@@ -100,6 +176,10 @@ export const RoutePreviewScreen: React.FC<Props> = ({ navigation, route }) => {
                         onPress={() => navigation.navigate('Home')}
                         style={{ marginTop: theme.spacing.sm }}
                     />
+
+                    {mapStatus !== 'ready' ? (
+                        <Text style={styles.hintText}>Map is unavailable right now. Showing a preview placeholder.</Text>
+                    ) : null}
                 </View>
             </View>
         </Screen>
@@ -122,9 +202,15 @@ const styles = StyleSheet.create({
         padding: theme.spacing.lg,
     },
 
+    centerInline: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: theme.spacing.sm,
+    },
+
     loadingText: {
         color: theme.colors.textMuted,
-        marginTop: theme.spacing.sm,
         ...getTextStyle('body'),
     },
 
@@ -133,10 +219,15 @@ const styles = StyleSheet.create({
         ...getTextStyle('h1'),
     },
 
+    errorTitle: {
+        color: theme.colors.text,
+        ...getTextStyle('h2'),
+    },
+
     errorText: {
         color: theme.colors.danger,
         marginTop: theme.spacing.xs,
-        textAlign: 'center',
+        textAlign: 'left',
         ...getTextStyle('body'),
     },
 
@@ -195,6 +286,12 @@ const styles = StyleSheet.create({
         color: theme.colors.text,
         marginTop: theme.spacing.xs,
         ...getTextStyle('h2'),
+    },
+
+    hintText: {
+        marginTop: theme.spacing.sm,
+        color: theme.colors.textMuted,
+        ...getTextStyle('caption'),
     },
 });
 
