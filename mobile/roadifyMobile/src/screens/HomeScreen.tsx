@@ -7,7 +7,7 @@ import { AppBar } from '../components/AppBar';
 import { PrimaryButton } from '../components/PrimaryButton';
 import type { RootStackParamList } from '../navigation/types';
 import { useAuth } from '../context/AuthContext';
-import { theme } from '../theme/theme';
+import { theme, getTextStyle } from '../theme/theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
@@ -16,7 +16,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
     const authed = useMemo(() => Boolean(isLoggedIn), [isLoggedIn]);
 
     return (
-        <Screen>
+        <Screen background="living">
             <AppBar title="Roadify" />
 
             <View style={styles.header}>
@@ -28,11 +28,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
                     </View>
                 </View>
 
-                <Image
-                    source={require('../assets/illustrations/hero.png')}
-                    style={styles.heroImage}
-                    resizeMode="contain"
-                />
+                <Image source={require('../assets/illustrations/hero.png')} style={styles.heroImage} resizeMode="contain" />
             </View>
 
             <View style={styles.card}>
@@ -46,25 +42,21 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
                         <PrimaryButton
                             title="Login"
                             onPress={() => navigation.navigate('Login')}
-                            style={{ marginTop: 16 }}
+                            style={styles.mt16}
                         />
-
                         <PrimaryButton
                             title="Create account"
                             onPress={() => navigation.navigate('Register')}
-                            style={{ marginTop: 12 }}
+                            style={styles.mt12}
                         />
 
                         <View style={styles.divider} />
 
-                        <Text style={styles.cardSubtitle}>
-                            You can still explore basic screens without login.
-                        </Text>
-
+                        <Text style={styles.cardSubtitle}>You can still explore basic screens without login.</Text>
                         <PrimaryButton
                             title="Explore (Plan Trip)"
                             onPress={() => navigation.navigate('RouteSelection')}
-                            style={{ marginTop: 12 }}
+                            style={styles.mt12}
                         />
                     </>
                 ) : (
@@ -75,22 +67,22 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
                         <PrimaryButton
                             title="Plan Trip"
                             onPress={() => navigation.navigate('RouteSelection')}
-                            style={{ marginTop: 16 }}
+                            style={styles.mt16}
                         />
                         <PrimaryButton
                             title="AI Assistant"
                             onPress={() => navigation.navigate('AIScreen')}
-                            style={{ marginTop: 12 }}
+                            style={styles.mt12}
                         />
                         <PrimaryButton
                             title="Analytics"
                             onPress={() => navigation.navigate('AnalyticsScreen')}
-                            style={{ marginTop: 12 }}
+                            style={styles.mt12}
                         />
                         <PrimaryButton
                             title="Trip Planner"
                             onPress={() => navigation.navigate('TripPlanner')}
-                            style={{ marginTop: 12 }}
+                            style={styles.mt12}
                         />
 
                         <View style={styles.divider} />
@@ -104,26 +96,34 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    header: { marginBottom: 16, marginTop: theme.spacing.md },
+    header: { marginBottom: theme.spacing.md, marginTop: theme.spacing.md },
     logoRow: { flexDirection: 'row', alignItems: 'center' },
-    logo: { width: 40, height: 40, borderRadius: 12, marginRight: 10 },
-    appName: { color: '#FFFFFF', fontSize: 22, fontWeight: '800' },
-    appSubtitle: { color: '#A7F3D0', fontSize: 12 },
-    heroImage: { marginTop: 16, width: '100%', height: 160, borderRadius: 24 },
+    logo: { width: 40, height: 40, borderRadius: theme.radius.md, marginRight: 10 },
+
+    appName: { color: theme.colors.text, ...getTextStyle('h1') },
+    appSubtitle: { color: theme.colors.primary, ...getTextStyle('caption') },
+
+    heroImage: { marginTop: theme.spacing.md, width: '100%', height: 160, borderRadius: theme.radius['2xl'] },
 
     card: {
-        backgroundColor: 'rgba(15,23,42,0.96)',
-        borderRadius: 24,
-        padding: 20,
+        backgroundColor: 'rgba(15,23,42,0.92)',
+        borderRadius: theme.radius['2xl'],
+        padding: theme.spacing.lg,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        ...theme.elevation.e1,
     },
-    cardTitle: { color: '#FFFFFF', fontSize: 18, fontWeight: '700' },
-    cardSubtitle: { color: '#9CA3AF', marginTop: 6, lineHeight: 18 },
+    cardTitle: { color: theme.colors.text, ...getTextStyle('h2') },
+    cardSubtitle: { color: theme.colors.textMuted, marginTop: 6, lineHeight: 18 },
 
     divider: {
         height: 1,
-        backgroundColor: 'rgba(255,255,255,0.10)',
-        marginVertical: 16,
+        backgroundColor: theme.colors.border,
+        marginVertical: theme.spacing.md,
     },
+
+    mt16: { marginTop: 16 },
+    mt12: { marginTop: 12 },
 });
 
 export default HomeScreen;

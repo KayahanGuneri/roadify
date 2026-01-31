@@ -66,7 +66,7 @@ export const RouteSelectionScreen: React.FC<Props> = ({ navigation }) => {
     };
 
     return (
-        <Screen>
+        <Screen background="living">
             <AppBar title="Select Route" onBack={() => navigation.goBack()} />
 
             <View style={styles.header}>

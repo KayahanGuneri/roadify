@@ -3,17 +3,20 @@ import { StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { Screen } from '../../components/Screen';
+import { AppBar } from '../../components/AppBar';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import type { RootStackParamList } from '../../navigation/types';
 import { openRegister } from '../../lib/keycloakLinks';
+import { theme, getTextStyle } from '../../theme/theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Register'>;
 
 export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
     return (
-        <Screen>
+        <Screen background="living">
+            <AppBar title="Create account" onBack={() => navigation.goBack()} />
+
             <View style={styles.card}>
-                <Text style={styles.title}>Create account</Text>
                 <Text style={styles.subtitle}>
                     Registration is handled securely by Keycloak. We’ll open the official registration page.
                 </Text>
@@ -28,7 +31,7 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
                 <PrimaryButton
                     title="Open Keycloak registration"
                     onPress={() => void openRegister()}
-                    style={{ marginTop: 14 }}
+                    style={{ marginTop: theme.spacing.md }}
                 />
 
                 <PrimaryButton
@@ -43,21 +46,25 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
 
 const styles = StyleSheet.create({
     card: {
-        backgroundColor: 'rgba(15,23,42,0.96)',
-        borderRadius: 24,
-        padding: 20,
+        marginTop: theme.spacing.md,
+        backgroundColor: 'rgba(15,23,42,0.92)',
+        borderRadius: theme.radius['2xl'],
+        padding: theme.spacing.lg,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        ...theme.elevation.e1,
     },
-    title: { color: '#FFFFFF', fontSize: 20, fontWeight: '800' },
-    subtitle: { color: '#9CA3AF', marginTop: 8, lineHeight: 18 },
+
+    subtitle: { color: theme.colors.textMuted, marginTop: 2, lineHeight: 18 },
 
     callout: {
-        marginTop: 16,
+        marginTop: theme.spacing.md,
         padding: 14,
-        borderRadius: 16,
+        borderRadius: theme.radius.lg,
         borderWidth: 1,
         borderColor: 'rgba(52, 211, 153, 0.25)',
-        backgroundColor: 'rgba(52, 211, 153, 0.08)',
+        backgroundColor: theme.colors.primarySoft,
     },
-    calloutTitle: { color: '#A7F3D0', fontWeight: '800', marginBottom: 6 },
+    calloutTitle: { color: theme.colors.primary, ...getTextStyle('bodyMedium'), marginBottom: 6 },
     calloutText: { color: 'rgba(255,255,255,0.82)', fontSize: 13, lineHeight: 18 },
 });
