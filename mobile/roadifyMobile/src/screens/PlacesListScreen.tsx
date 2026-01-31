@@ -1,12 +1,12 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     View,
     Text,
     StyleSheet,
     ActivityIndicator,
     FlatList,
-    TextInput,
     Alert,
+    Animated,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
@@ -15,6 +15,9 @@ import { Screen } from '../components/Screen';
 import { AppBar } from '../components/AppBar';
 import { PressableScale } from '../components/PressableScale';
 import { PlaceCard } from '../components/PlaceCard';
+import { FilterChips } from '../components/FilterChips';
+import { NumberField } from '../components/NumberField';
+
 import { usePlaces } from '../hooks/usePlaces';
 import type { PlacesFilters, PlaceDTO } from '../types/places';
 import { getTextStyle, theme } from '../theme/theme';
@@ -25,35 +28,34 @@ import { useTrip } from '../hooks/useTrip';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'PlacesList'>;
 
+// Keep in sync with backend enum values (case-sensitive in your API)
+const CATEGORY_OPTIONS = ['CAFE', 'FOOD', 'HOTEL', 'FUEL', 'OTHER'];
+
 export const PlacesListScreen: React.FC<Props> = ({ navigation, route }) => {
     const { routeId } = route.params;
 
     const { accessToken } = useAuth();
     const { currentTripId, setCurrentTripId } = useTripContext();
 
-    const { tripQuery, createTripMutation, updateStopsMutation } = useTrip(accessToken, currentTripId);
+    const { tripQuery, createTripMutation, updateStopsMutation } = useTrip(
+        accessToken,
+        currentTripId,
+    );
 
-    const [category, setCategory] = useState<string>('');
-    const [minRatingText, setMinRatingText] = useState<string>('');
-    const [maxDetourKmText, setMaxDetourKmText] = useState<string>('');
+    // Draft values (user edits freely)
+    const [draftCategory, setDraftCategory] = useState<string | null>(null);
+    const [draftMinRating, setDraftMinRating] = useState<string>('');
+    const [draftMaxDetour, setDraftMaxDetour] = useState<string>('');
 
-    const filters: PlacesFilters = useMemo(() => {
-        const minRating = minRatingText.trim() === '' ? undefined : Number(minRatingText);
-        const maxDetourKm = maxDetourKmText.trim() === '' ? undefined : Number(maxDetourKmText);
+    // Applied filters (query runs only when Apply pressed)
+    const [applied, setApplied] = useState<PlacesFilters>({});
 
-        return {
-            category: category.trim() === '' ? undefined : category.trim().toUpperCase(),
-            minRating: Number.isFinite(minRating) ? minRating : undefined,
-            maxDetourKm: Number.isFinite(maxDetourKm) ? maxDetourKm : undefined,
-        };
-    }, [category, minRatingText, maxDetourKmText]);
-
-    const { data, isLoading, isFetching, error, refetch } = usePlaces(routeId, filters);
+    const { data, isLoading, isFetching, error, refetch } = usePlaces(routeId, applied);
     const places = data ?? [];
 
     const isMutatingTrip = createTripMutation.isPending || updateStopsMutation.isPending;
 
-    const ensureTripId = async (): Promise<string> => {
+    const ensureTripId = useCallback(async (): Promise<string> => {
         if (!accessToken) throw new Error('Missing access token');
         if (currentTripId) return currentTripId;
 
@@ -64,48 +66,115 @@ export const PlacesListScreen: React.FC<Props> = ({ navigation, route }) => {
 
         setCurrentTripId(created.id);
         return created.id;
-    };
+    }, [accessToken, currentTripId, createTripMutation, routeId, setCurrentTripId]);
 
-    const onAddToTrip = async (place: PlaceDTO) => {
-        try {
-            if (!accessToken) {
-                Alert.alert('Login required', 'Please login to add places to a trip.');
-                return;
+    const onAddToTrip = useCallback(
+        async (place: PlaceDTO) => {
+            try {
+                if (!accessToken) {
+                    Alert.alert('Login required', 'Please login to add places to a trip.');
+                    return;
+                }
+
+                const tripId = await ensureTripId();
+                const existingStopsCount = tripQuery.data?.stops?.length ?? 0;
+
+                await updateStopsMutation.mutateAsync({
+                    tripId,
+                    req: {
+                        add: [
+                            {
+                                placeId: place.id,
+                                placeName: place.name?.trim() ? place.name : null,
+                                orderIndex: existingStopsCount,
+                                plannedArrivalTime: null,
+                                plannedDurationMinutes: null,
+                            },
+                        ],
+                        removeIds: [],
+                    },
+                });
+
+                Alert.alert('Added', 'Place added to your trip.');
+            } catch (e: any) {
+                Alert.alert('Add to trip failed', e?.message ?? 'Unknown error');
             }
+        },
+        [accessToken, ensureTripId, tripQuery.data?.stops, updateStopsMutation],
+    );
 
-            const tripId = await ensureTripId();
-            const existingStopsCount = tripQuery.data?.stops?.length ?? 0;
+    const goToTripPlanner = useCallback(() => {
+        navigation.navigate('TripPlanner', { tripId: currentTripId });
+    }, [navigation, currentTripId]);
 
-            await updateStopsMutation.mutateAsync({
-                tripId,
-                req: {
-                    add: [
-                        {
-                            placeId: place.id,
-                            placeName: place.name ?? null,
-                            orderIndex: existingStopsCount,
-                            plannedArrivalTime: null,
-                            plannedDurationMinutes: null,
-                        },
-                    ],
-                    removeIds: [],
-                },
+    const confirmClearTrip = useCallback(() => {
+        if (!currentTripId) return;
+
+        Alert.alert('Clear trip?', 'This will remove the active trip from the app context.', [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Clear', style: 'destructive', onPress: () => setCurrentTripId(null) },
+        ]);
+    }, [currentTripId, setCurrentTripId]);
+
+    const onApply = useCallback(() => {
+        const minRating = draftMinRating.trim() === '' ? undefined : Number(draftMinRating);
+        const maxDetourKm = draftMaxDetour.trim() === '' ? undefined : Number(draftMaxDetour);
+
+        const next: PlacesFilters = {
+            category: draftCategory ?? undefined,
+            minRating: Number.isFinite(minRating) ? minRating : undefined,
+            maxDetourKm: Number.isFinite(maxDetourKm) ? maxDetourKm : undefined,
+        };
+
+        setApplied(next);
+    }, [draftCategory, draftMinRating, draftMaxDetour]);
+
+    const onReset = useCallback(() => {
+        setDraftCategory(null);
+        setDraftMinRating('');
+        setDraftMaxDetour('');
+        setApplied({});
+    }, []);
+
+    // Light list enter animation
+    const animated = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        animated.setValue(0);
+        Animated.timing(animated, { toValue: 1, duration: 360, useNativeDriver: true }).start();
+    }, [animated, applied.category, applied.minRating, applied.maxDetourKm]);
+
+    const renderItem = useCallback(
+        ({ item, index }: { item: PlaceDTO; index: number }) => {
+            // Keep it subtle: cap the offset to avoid huge gaps with long lists
+            const extra = Math.min(index, 12) * 1.5;
+
+            const translateY = animated.interpolate({
+                inputRange: [0, 1],
+                outputRange: [10 + extra, 0],
             });
 
-            Alert.alert('Added', 'Place added to your trip.');
-        } catch (e: any) {
-            Alert.alert('Add to trip failed', e?.message ?? 'Unknown error');
-        }
-    };
+            const opacity = animated.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, 1],
+            });
 
-    const goToTripPlanner = () => {
-        navigation.navigate('TripPlanner', { tripId: currentTripId });
-    };
+            return (
+                <Animated.View style={{ opacity, transform: [{ translateY }] }}>
+                    <PlaceCard place={item} onAddToTrip={onAddToTrip} />
+                </Animated.View>
+            );
+        },
+        [animated, onAddToTrip],
+    );
 
-    const clearTrip = () => setCurrentTripId(null);
+    const statusText = useMemo(() => {
+        if (isFetching && !isLoading) return 'Updating…';
+        return `${places.length} result(s)`;
+    }, [isFetching, isLoading, places.length]);
 
     return (
-        <Screen>
+        <Screen noPadding>
             <AppBar
                 title="Places"
                 right={{
@@ -117,12 +186,15 @@ export const PlacesListScreen: React.FC<Props> = ({ navigation, route }) => {
 
             <View style={styles.container}>
                 <View style={styles.tripStatusBar}>
-                    <Text style={styles.tripStatusText}>
-                        Trip: {currentTripId ? 'ACTIVE' : 'none'} {isMutatingTrip ? '(saving...)' : ''}
-                    </Text>
+                    <View>
+                        <Text style={styles.tripStatusTitle}>Trip</Text>
+                        <Text style={styles.tripStatusText}>
+                            {currentTripId ? 'Active' : 'None'} {isMutatingTrip ? '(saving…) ' : ''}
+                        </Text>
+                    </View>
 
                     <PressableScale
-                        onPress={clearTrip}
+                        onPress={confirmClearTrip}
                         disabled={!currentTripId || isMutatingTrip}
                         contentStyle={styles.clearTripBtn}
                     >
@@ -133,48 +205,43 @@ export const PlacesListScreen: React.FC<Props> = ({ navigation, route }) => {
                 <View style={styles.filtersCard}>
                     <Text style={styles.sectionTitle}>Filters</Text>
 
-                    <View style={styles.filterRow}>
-                        <Text style={styles.label}>Category</Text>
-                        <TextInput
-                            value={category}
-                            onChangeText={setCategory}
-                            placeholder="e.g. FOOD, HOTEL, OTHER"
-                            placeholderTextColor="rgba(255,255,255,0.35)"
-                            style={styles.input}
-                            autoCapitalize="characters"
-                        />
-                    </View>
+                    <FilterChips
+                        label="Category"
+                        options={CATEGORY_OPTIONS}
+                        value={draftCategory}
+                        onChange={setDraftCategory}
+                        helperText="Select a category or leave empty to see all."
+                    />
 
-                    <View style={styles.filterRow}>
-                        <Text style={styles.label}>Min rating</Text>
-                        <TextInput
-                            value={minRatingText}
-                            onChangeText={setMinRatingText}
-                            placeholder="e.g. 4"
-                            placeholderTextColor="rgba(255,255,255,0.35)"
-                            keyboardType="numeric"
-                            style={styles.input}
-                        />
-                    </View>
+                    <NumberField
+                        label="Minimum rating"
+                        value={draftMinRating}
+                        onChangeText={setDraftMinRating}
+                        placeholder="e.g. 4.2"
+                        helperText="0–5. Leave empty to ignore."
+                    />
 
-                    <View style={styles.filterRow}>
-                        <Text style={styles.label}>Max detour (km)</Text>
-                        <TextInput
-                            value={maxDetourKmText}
-                            onChangeText={setMaxDetourKmText}
-                            placeholder="e.g. 5"
-                            placeholderTextColor="rgba(255,255,255,0.35)"
-                            keyboardType="numeric"
-                            style={styles.input}
-                        />
+                    <NumberField
+                        label="Maximum detour (km)"
+                        value={draftMaxDetour}
+                        onChangeText={setDraftMaxDetour}
+                        placeholder="e.g. 5"
+                        helperText="How far off-route you're willing to go."
+                    />
+
+                    <View style={styles.actionsRow}>
+                        {/* ✅ IMPORTANT: flex must be on wrapper (style), not contentStyle */}
+                        <PressableScale onPress={onReset} style={{ flex: 1 }} contentStyle={styles.secondaryBtn}>
+                            <Text style={styles.secondaryBtnText}>Reset</Text>
+                        </PressableScale>
+
+                        <PressableScale onPress={onApply} style={{ flex: 1 }} contentStyle={styles.primaryBtn}>
+                            <Text style={styles.primaryBtnText}>Apply</Text>
+                        </PressableScale>
                     </View>
 
                     <View style={styles.statusRow}>
-                        {isFetching && !isLoading ? (
-                            <Text style={styles.statusText}>Updating…</Text>
-                        ) : (
-                            <Text style={styles.statusText}>{places.length} result(s)</Text>
-                        )}
+                        <Text style={styles.statusText}>{statusText}</Text>
 
                         <PressableScale onPress={() => refetch()} contentStyle={styles.refreshBtn}>
                             <Text style={styles.refreshText}>Refresh</Text>
@@ -206,7 +273,7 @@ export const PlacesListScreen: React.FC<Props> = ({ navigation, route }) => {
                         data={places}
                         keyExtractor={(item) => item.id}
                         contentContainerStyle={styles.listContent}
-                        renderItem={({ item }) => <PlaceCard place={item} onAddToTrip={onAddToTrip} />}
+                        renderItem={renderItem}
                         showsVerticalScrollIndicator={false}
                     />
                 )}
@@ -235,8 +302,14 @@ const styles = StyleSheet.create({
         borderColor: theme.colors.border,
     },
 
+    tripStatusTitle: {
+        color: theme.colors.text,
+        ...getTextStyle('bodyMedium'),
+    },
+
     tripStatusText: {
         color: theme.colors.textMuted,
+        marginTop: 2,
         ...getTextStyle('caption'),
     },
 
@@ -266,25 +339,41 @@ const styles = StyleSheet.create({
     sectionTitle: {
         color: theme.colors.text,
         ...getTextStyle('h2'),
-        marginBottom: theme.spacing.sm,
-    },
-
-    filterRow: { marginTop: theme.spacing.sm },
-
-    label: {
-        color: theme.colors.textMuted,
-        ...getTextStyle('caption'),
         marginBottom: theme.spacing.xs,
     },
 
-    input: {
-        height: 42,
+    actionsRow: {
+        flexDirection: 'row',
+        gap: theme.spacing.sm,
+        marginTop: theme.spacing.md,
+    },
+
+    secondaryBtn: {
+        paddingVertical: theme.spacing.sm,
         borderRadius: theme.radius.md,
-        paddingHorizontal: theme.spacing.md,
-        color: theme.colors.text,
+        alignItems: 'center',
         backgroundColor: 'rgba(255,255,255,0.06)',
         borderWidth: 1,
         borderColor: theme.colors.border,
+    },
+
+    secondaryBtnText: {
+        color: theme.colors.textMuted,
+        ...getTextStyle('bodyMedium'),
+    },
+
+    primaryBtn: {
+        paddingVertical: theme.spacing.sm,
+        borderRadius: theme.radius.md,
+        alignItems: 'center',
+        backgroundColor: theme.colors.primarySoft,
+        borderWidth: 1,
+        borderColor: 'rgba(52, 211, 153, 0.35)',
+    },
+
+    primaryBtnText: {
+        color: theme.colors.primary,
+        ...getTextStyle('bodyMedium'),
     },
 
     statusRow: {
