@@ -6,61 +6,67 @@
 *.iml
 
 # ===============================
-# Build outputs
-# ===============================
-out/
-build/
-dist/
-target/
-
-# ===============================
-# Java / Spring Boot
-# ===============================
-*.class
-*.log
-hs_err_pid*
-spring.log
-
-# ===============================
-# Node / React / React Native
-# ===============================
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# ===============================
-# Expo
-# ===============================
-.expo/
-.expo-shared/
-web-build/
-
-# ===============================
-# Environment files
-# ===============================
-.env
-.env.*
-!.env.example
-
-# ===============================
 # OS files
 # ===============================
 .DS_Store
 Thumbs.db
 
 # ===============================
+# Logs
+# ===============================
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ===============================
+# Java / Spring Boot / Gradle
+# ===============================
+*.class
+hs_err_pid*
+**/.gradle/
+**/build/
+**/out/
+**/target/
+
+# ===============================
+# Node / React / React Native
+# ===============================
+**/node_modules/
+**/.cache/
+**/coverage/
+**/dist/
+
+# ===============================
+# Expo (if ever used)
+# ===============================
+**/.expo/
+**/.expo-shared/
+**/web-build/
+
+# ===============================
+# Env / Secrets
+# ===============================
+.env
+.env.*
+!.env.example
+
+# Android / iOS local secrets & tooling
+**/local.properties
+**/*.keystore
+**/*.jks
+**/*.p12
+**/google-services.json
+**/GoogleService-Info.plist
+
+# ===============================
+# Roadify Mobile - DO NOT COMMIT API KEY IN MANIFEST
+# (Temporary workaround: better to inject via Gradle)
+# ===============================
+mobile/roadifyMobile/android/app/src/main/AndroidManifest.xml
+
+# ===============================
 # Misc
 # ===============================
-coverage/
-.cache/
-
-# Root tooling
-tsconfig.json
-
-# accidental folder
 git/
-
-**/build/
-**/.gradle/
-"backend/ai-assistant-service/build/" 
