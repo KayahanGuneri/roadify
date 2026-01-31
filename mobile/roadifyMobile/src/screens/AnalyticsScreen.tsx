@@ -33,7 +33,7 @@ export const AnalyticsScreen: React.FC<any> = ({ navigation }) => {
     const totalAiAccepted = overview?.totalAiAccepted ?? 0;
 
     return (
-        <Screen>
+        <Screen background="living">
             <AppBar title="Analytics" />
 
             <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>

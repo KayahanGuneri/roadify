@@ -41,7 +41,7 @@ export const TripPlannerScreen: React.FC<Props> = ({ navigation, route }) => {
     };
 
     return (
-        <Screen>
+        <Screen background="living">
             <AppBar title="Trip" right={{ label: 'Clear', onPress: onClear, disabled: !tripId }} />
 
             <View style={styles.container}>

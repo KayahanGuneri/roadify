@@ -2,15 +2,28 @@ import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, StatusBar, StyleProp, ViewStyle } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { theme } from '../theme/theme';
+import { AnimatedBackground } from './AnimatedBackground';
 
 type Props = {
     children: React.ReactNode;
     style?: StyleProp<ViewStyle>;        // outer container
     contentStyle?: StyleProp<ViewStyle>; // inner content wrapper
     noPadding?: boolean;
+
+    /**
+     * English: Optional background mode.
+     * Türkçe: Faz 4 için sadece Home/Auth ekranlarında living background açacağız.
+     */
+    background?: 'none' | 'living';
 };
 
-export const Screen: React.FC<Props> = ({ children, style, contentStyle, noPadding }) => {
+export const Screen: React.FC<Props> = ({
+                                            children,
+                                            style,
+                                            contentStyle,
+                                            noPadding,
+                                            background = 'none',
+                                        }) => {
     const opacity = useRef(new Animated.Value(0)).current;
     const translateY = useRef(new Animated.Value(14)).current;
 
@@ -24,6 +37,9 @@ export const Screen: React.FC<Props> = ({ children, style, contentStyle, noPaddi
     return (
         <LinearGradient colors={[theme.colors.bg, theme.colors.surface]} style={[styles.gradient, style]}>
             <StatusBar barStyle="light-content" />
+
+            {background === 'living' ? <AnimatedBackground /> : null}
+
             <Animated.View
                 style={[
                     styles.content,

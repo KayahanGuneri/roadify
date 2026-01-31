@@ -113,7 +113,7 @@ export const AIScreen: React.FC = () => {
     const listData = useMemo(() => [...messages].sort((a, b) => a.createdAt - b.createdAt), [messages]);
 
     return (
-        <Screen>
+        <Screen background="living">
             <AppBar title="AI assistant" />
 
             <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
